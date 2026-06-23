@@ -6,10 +6,11 @@ interface CompressOptions {
   maxWidth?: number
   maxHeight?: number
   quality?: number
+  onProgress?: (progress: number) => void
 }
 
 export async function compressImage(file: File, options: CompressOptions = {}): Promise<File> {
-  const { maxWidth = 1920, maxHeight = 1920, quality = 0.8 } = options
+  const { maxWidth = 1920, maxHeight = 1920, quality = 0.8, onProgress } = options
 
   if (file.size > MAX_SIZE_MB * 1024 * 1024) {
     throw new Error(`Ukuran file maksimal ${MAX_SIZE_MB}MB`)
@@ -21,6 +22,7 @@ export async function compressImage(file: File, options: CompressOptions = {}): 
     useWebWorker: true,
     fileType: file.type || 'image/jpeg',
     initialQuality: quality,
+    onProgress,
   })
 
   return compressed
