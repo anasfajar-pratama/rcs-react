@@ -78,11 +78,14 @@ export function HeroSlider() {
     return () => clearInterval(timer)
   }, [next, mounted])
 
+  const logoStyle = settings[`logo_style_${slide.brandKey}`]
+  const logoRounded = logoStyle === 'circle' ? 'rounded-full' : logoStyle === 'square' ? 'rounded-none' : 'rounded-lg'
+
   return (
     <section className="relative min-h-[85vh] flex items-center pt-20 overflow-hidden">
       <AnimatePresence mode="wait">
         <motion.div
-          key={current}
+          key={`bg-${current}`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -90,6 +93,34 @@ export function HeroSlider() {
           className="absolute inset-0"
         >
           <div className={`absolute inset-0 bg-gradient-to-br ${slide.color} via-background to-background`} />
+
+          <div
+            className="absolute inset-0 hidden md:block"
+            style={{
+              maskImage: 'linear-gradient(100deg, transparent 15%, black 45%, black 100%)',
+              WebkitMaskImage: 'linear-gradient(100deg, transparent 15%, black 45%, black 100%)',
+            }}
+          >
+            {showHero ? (
+              <img
+                src={heroUrl}
+                alt={slide.brand}
+                className="w-full h-full object-cover"
+                onError={() => setHeroErrors((prev) => ({ ...prev, [slide.brandKey]: true }))}
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-primary/5 to-accent/5 flex items-center justify-center">
+                <ImageIcon className="h-20 w-20 text-primary/20" />
+              </div>
+            )}
+          </div>
+
+          {showHero && (
+            <div
+              className="absolute right-[10%] top-1/2 -translate-y-1/2 w-[30rem] h-[30rem] rounded-full blur-3xl pointer-events-none hidden md:block"
+              style={{ background: `radial-gradient(circle, ${slide.glowColor}40, transparent 70%)` }}
+            />
+          )}
         </motion.div>
       </AnimatePresence>
 
@@ -102,91 +133,67 @@ export function HeroSlider() {
           transition={{ duration: 0.6 }}
           className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full"
         >
-          <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
-            <div>
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-                className="flex items-center gap-3 mb-4"
-              >
-                <span className="text-xs font-bold tracking-[0.2em] uppercase text-muted-foreground">
-                  {slide.brand}
-                </span>
-                {showLogo && (
-                  <div className="px-3 py-1 rounded-lg bg-white/70 backdrop-blur-sm shadow-sm">
-                    <img
-                      src={logoUrl}
-                      alt={`${slide.brand} logo`}
-                      className={`h-8 w-auto ${settings[`logo_style_${slide.brandKey}`] === 'circle' ? 'rounded-full' : settings[`logo_style_${slide.brandKey}`] === 'square' ? 'rounded-none' : 'rounded-lg'}`}
-                      onError={() => setLogoErrors((prev) => ({ ...prev, [slide.brandKey]: true }))}
-                    />
-                  </div>
-                )}
-              </motion.div>
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.5 }}
-                className="font-heading text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight text-balance mb-3"
-              >
-                {slide.title}
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.5 }}
-                className="text-lg sm:text-xl font-medium text-primary mb-4"
-              >
-                {slide.subtitle}
-              </motion.p>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5, duration: 0.5 }}
-                className="text-base text-muted-foreground max-w-lg leading-relaxed mb-8"
-              >
-                {slide.tagline}
-              </motion.p>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6, duration: 0.5 }}
-              >
-                <Link href={`/brand/${slide.brandKey}`}>
-                  <Button size="lg" className="text-base gap-2">
-                    {slide.cta} <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-              </motion.div>
-            </div>
+          <div className="max-w-lg bg-background/60 backdrop-blur-xl rounded-2xl p-6 sm:p-8 border border-white/10 shadow-xl">
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3, duration: 0.7 }}
-              className="hidden md:flex items-center justify-center relative"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              className="flex items-center gap-3 mb-4"
             >
-              <div className="relative w-full max-w-md aspect-square">
-                <div
-                  className="absolute inset-0 rounded-full blur-3xl opacity-30"
-                  style={{ background: `linear-gradient(135deg, ${slide.glowColor}, transparent)` }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent z-10 pointer-events-none" />
-                {showHero ? (
+              <span className="text-xs font-bold tracking-[0.2em] uppercase text-muted-foreground">
+                {slide.brand}
+              </span>
+              {showLogo && (
+                <div className="px-3 py-1 rounded-lg bg-white/70 backdrop-blur-sm shadow-sm">
                   <img
-                    src={heroUrl}
-                    alt={slide.brand}
-                    className="relative w-full h-full object-contain drop-shadow-2xl p-4 sm:p-8"
-                    onError={() => setHeroErrors((prev) => ({ ...prev, [slide.brandKey]: true }))}
+                    src={logoUrl}
+                    alt={`${slide.brand} logo`}
+                    className={`h-8 w-auto ${logoRounded}`}
+                    onError={() => setLogoErrors((prev) => ({ ...prev, [slide.brandKey]: true }))}
                   />
-                ) : (
-                  <div className="relative w-full h-full flex items-center justify-center">
-                    <div className="w-48 h-48 sm:w-64 sm:h-64 rounded-[2rem] bg-gradient-to-br from-primary/5 to-accent/5 border border-border/30 flex items-center justify-center">
-                      <ImageIcon className="h-16 w-16 text-primary/20" />
-                    </div>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
+            </motion.div>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+              className="font-heading text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight text-balance mb-3 drop-shadow-sm"
+              style={{ textShadow: '0 2px 8px hsl(var(--background) / 0.3)' }}
+            >
+              {slide.title}
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+              className="text-lg sm:text-xl font-medium text-primary mb-4 drop-shadow-sm"
+              style={{ textShadow: '0 1px 4px hsl(var(--background) / 0.3)' }}
+            >
+              {slide.subtitle}
+            </motion.p>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.5 }}
+              className="text-base text-muted-foreground max-w-lg leading-relaxed mb-8"
+            >
+              {slide.tagline}
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.5 }}
+            >
+              <Link href={`/brand/${slide.brandKey}`}>
+                <Button size="lg" className="text-base gap-2">
+                  {slide.cta} <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
             </motion.div>
           </div>
         </motion.div>

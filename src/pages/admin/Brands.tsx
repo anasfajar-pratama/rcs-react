@@ -52,7 +52,9 @@ export default function AdminBrands() {
 
   useEffect(() => { load() }, [])
 
-  const { cropState, uploading, startCrop, cancelCrop, handleCropResult } = useImageUpload()
+  const { cropState, uploading, progress, startCrop, cancelCrop, handleCropResult, directUpload } = useImageUpload()
+  const [skipCrop, setSkipCrop] = useState<Record<string, boolean>>({})
+  const [rev, setRev] = useState(0)
 
   const handleUploadClick = (key: string, e: React.ChangeEvent<HTMLInputElement>, shape: 'round' | 'rect') => {
     const file = e.target.files?.[0]
@@ -62,9 +64,16 @@ export default function AdminBrands() {
       e.target.value = ''
       return
     }
-    startCrop(file, shape, 1, (url) => {
+    e.target.value = ''
+    const onDone = (url: string) => {
       setEdited((prev) => ({ ...prev, [key]: url }))
-    })
+      setRev((r) => r + 1)
+    }
+    if (skipCrop[key]) {
+      directUpload(file, onDone)
+    } else {
+      startCrop(file, shape, 1, onDone)
+    }
   }
 
   const handleSave = async (items: Setting[], brandName: string) => {
@@ -126,14 +135,26 @@ export default function AdminBrands() {
     if (setting.type === 'image') {
       const isHero = setting.key.startsWith('hero_image_')
       const isUploading = uploading
+      const src = edited[setting.key]
+      const showProgress = isUploading && progress > 0 && progress < 100
       return (
         <div className="space-y-2">
-          {edited[setting.key] && (
-            <div className="w-32 h-32 rounded-xl border border-border overflow-hidden bg-white flex items-center justify-center p-3">
-              <img src={edited[setting.key]} alt="Logo" className="w-full h-full object-contain" />
+          {isHero && (
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Rekomendasi: minimal 1280&times;720px, rasio 16:9. Subjek utama sebaiknya di area tengah atau kanan.
+            </p>
+          )}
+          {src && (
+            <div className={`relative rounded-xl border border-border overflow-hidden bg-white flex items-center justify-center p-3 ${isHero ? 'w-full aspect-video' : 'w-32 h-32'}`}>
+              <img src={`${src}${rev > 0 ? `?rev=${rev}` : ''}`} alt={isHero ? 'Hero' : 'Logo'} className="w-full h-full object-contain" />
+              {isUploading && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-xl">
+                  <Loader2 className="h-6 w-6 animate-spin text-white" />
+                </div>
+              )}
             </div>
           )}
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <input
               ref={(el) => { fileInputRefs.current[setting.key] = el }}
               type="file" accept="image/*" className="hidden"
@@ -141,14 +162,30 @@ export default function AdminBrands() {
             />
             <Button variant="outline" size="sm" className="gap-2" disabled={isUploading} onClick={() => fileInputRefs.current[setting.key]?.click()}>
               {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
-              {isUploading ? 'Mengupload...' : edited[setting.key] ? (isHero ? 'Ganti Gambar Hero' : 'Ganti Logo') : (isHero ? 'Upload Gambar Hero' : 'Upload Logo')}
+              {isUploading ? 'Mengupload...' : src ? (isHero ? 'Ganti Gambar Hero' : 'Ganti Logo') : (isHero ? 'Upload Gambar Hero' : 'Upload Logo')}
             </Button>
-            {edited[setting.key] && (
+            {src && !isUploading && (
               <Button variant="ghost" size="sm" onClick={() => setEdited((prev) => ({ ...prev, [setting.key]: '' }))}>
                 Hapus
               </Button>
             )}
           </div>
+          {showProgress && (
+            <div className="w-full h-1.5 bg-border rounded-full overflow-hidden">
+              <div className="h-full bg-primary rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
+            </div>
+          )}
+          {isHero && (
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={!!skipCrop[setting.key]}
+                onChange={(e) => setSkipCrop((prev) => ({ ...prev, [setting.key]: e.target.checked }))}
+                className="rounded border-border accent-primary"
+              />
+              Upload langsung tanpa crop
+            </label>
+          )}
         </div>
       )
     }

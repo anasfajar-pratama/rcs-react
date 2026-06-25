@@ -35,6 +35,9 @@ export interface Product {
   halalCertified?: boolean
   warrantyInfo?: string
   price?: number
+  originalPrice?: number
+  rating?: number
+  soldCount?: number
 }
 
 export interface Testimonial {
@@ -74,6 +77,8 @@ export const fallbackProducts: Product[] = [
     isNew: true,
     isPromo: false,
     isFeatured: true,
+    rating: 4.8,
+    soldCount: 1240,
     weight: '30ml',
     dimensions: '3.5 x 3.5 x 10 cm',
     bpomNumber: 'NA18201200123',
@@ -98,6 +103,8 @@ export const fallbackProducts: Product[] = [
     isNew: false,
     isPromo: true,
     isFeatured: true,
+    rating: 4.6,
+    soldCount: 890,
     weight: '50ml',
     price: 179000,
   },
@@ -147,6 +154,8 @@ export const fallbackProducts: Product[] = [
     sortOrder: 5,
     price: 129000,
     isFeatured: true,
+    rating: 4.7,
+    soldCount: 560,
   },
   {
     id: 6,
@@ -163,6 +172,8 @@ export const fallbackProducts: Product[] = [
     sortOrder: 6,
     isPromo: true,
     isFeatured: true,
+    rating: 4.9,
+    soldCount: 2100,
     price: 79000,
   },
   {

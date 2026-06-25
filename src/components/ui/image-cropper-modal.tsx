@@ -16,7 +16,10 @@ export function ImageCropperModal({ file, cropShape, aspectRatio = 1, onCrop, on
   const [zoom, setZoom] = useState(1)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
   const [processing, setProcessing] = useState(false)
+  const [freeAspect, setFreeAspect] = useState(false)
   const imageUrl = URL.createObjectURL(file)
+
+  const locked = cropShape === 'round'
 
   useEffect(() => {
     return () => { URL.revokeObjectURL(imageUrl) }
@@ -85,7 +88,7 @@ export function ImageCropperModal({ file, cropShape, aspectRatio = 1, onCrop, on
             image={imageUrl}
             crop={crop}
             zoom={zoom}
-            aspect={aspectRatio}
+            aspect={locked ? aspectRatio : (freeAspect ? undefined : aspectRatio)}
             cropShape={cropShape}
             showGrid={false}
             onCropChange={setCrop}
@@ -95,6 +98,31 @@ export function ImageCropperModal({ file, cropShape, aspectRatio = 1, onCrop, on
         </div>
 
         <div className="px-4 py-3 border-t border-border space-y-3">
+          {!locked && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground shrink-0">Rasio</span>
+              <div className="flex rounded-lg border border-border overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setFreeAspect(false)}
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                    !freeAspect ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Persegi
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFreeAspect(true)}
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                    freeAspect ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Bebas
+                </button>
+              </div>
+            </div>
+          )}
           <div className="flex items-center gap-3">
             <span className="text-xs text-muted-foreground shrink-0">Zoom</span>
             <input

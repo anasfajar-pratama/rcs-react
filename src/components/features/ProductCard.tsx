@@ -1,34 +1,72 @@
 import { useState } from 'react'
 import { Link } from 'wouter'
-import { Heart, Eye } from 'lucide-react'
-import { Badge } from '../ui/badge'
-import { Button } from '../ui/button'
+import { Heart, Eye, Crown, Star } from 'lucide-react'
 import { useWishlist } from '../../hooks/use-wishlist'
-import { cn } from '../../lib/utils'
+import { cn, formatPrice } from '../../lib/utils'
 import type { Product } from '../../data/products'
 
 interface ProductCardProps {
   product: Product
   onQuickView?: (product: Product) => void
+  rank?: number
 }
 
-const categoryColors: Record<string, string> = {
-  Wanita: 'bg-rose-50 text-rose-600 border-rose-200',
-  Pria: 'bg-blue-50 text-blue-600 border-blue-200',
-  Anak: 'bg-green-50 text-green-600 border-green-200',
+const brandConfig: Record<string, { name: string; bg: string; text: string }> = {
+  Wanita: { name: 'BLISERA', bg: '#B76E79', text: '#FFFFFF' },
+  Pria: { name: 'FOKKA', bg: '#4A5568', text: '#FFFFFF' },
+  Anak: { name: 'PIJAR NALA', bg: '#C3E6FC', text: '#2D3748' },
 }
 
-export function ProductCard({ product, onQuickView }: ProductCardProps) {
+function formatSoldCount(count?: number): string {
+  if (!count) return ''
+  if (count >= 1000) {
+    return (count / 1000).toFixed(count % 1000 === 0 ? 0 : 1).replace(/\.0$/, '') + 'rb'
+  }
+  return count.toString()
+}
+
+export function ProductCard({ product, onQuickView, rank }: ProductCardProps) {
   const { isWishlisted, toggleItem } = useWishlist()
   const wishlisted = isWishlisted(product.id)
   const [imgError, setImgError] = useState(false)
 
   const productImage = product.images?.[0]?.imageUrl || product.imageUrl
+  const brand = brandConfig[product.category]
+  const rating = product.rating ?? 0
+  const filledStars = Math.round(rating)
 
   return (
     <div className="group relative bg-white rounded-2xl border border-border overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+      {/* TOP Badge */}
+      {rank && rank <= 4 && (
+        <div
+          className="absolute top-0 left-0 z-10 flex flex-col items-center pointer-events-none"
+          title={`Top ${rank} Terlaris`}
+          style={{
+            clipPath: 'polygon(0% 0%, 100% 0%, 100% 80%, 50% 100%, 0% 80%)',
+            background: 'linear-gradient(180deg, #fbbf24 0%, #eab308 25%, #d97706 60%, #ea580c 100%)',
+            width: 60,
+            padding: '8px 6px 12px',
+          }}
+        >
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              clipPath: 'polygon(0% 0%, 100% 0%, 100% 80%, 50% 100%, 0% 80%)',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 50%)',
+            }}
+          />
+          <Crown className="h-3.5 w-3.5 text-white drop-shadow-sm" />
+          <span className="text-[8px] font-bold uppercase tracking-[0.15em] text-white/90 leading-none mt-0.5">
+            TOP
+          </span>
+          <span className="text-2xl font-black leading-none text-white drop-shadow-md -mt-0.5">
+            {rank}
+          </span>
+        </div>
+      )}
       <Link href={`/product/${product.id}`}>
-        <div className="aspect-square bg-gradient-to-br from-primary/5 to-accent/5 flex items-center justify-center p-8">
+        <div className="relative aspect-square bg-gradient-to-br from-primary/5 to-accent/5 flex items-center justify-center p-8">
           {productImage && !imgError ? (
             <img
               src={productImage}
@@ -43,14 +81,18 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
               </span>
             </div>
           )}
+          {/* Brand Badge */}
+          <div
+            className="absolute bottom-2 left-2 z-10 rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider pointer-events-none"
+            style={{
+              backgroundColor: brand.bg,
+              color: brand.text,
+            }}
+          >
+            {brand.name}
+          </div>
         </div>
       </Link>
-
-      <div className="absolute top-3 left-3">
-        <Badge variant="outline" className={cn('text-xs', categoryColors[product.category])}>
-          {product.category}
-        </Badge>
-      </div>
 
       <button
         onClick={(e) => { e.preventDefault(); toggleItem(product.id) }}
@@ -71,18 +113,62 @@ export function ProductCard({ product, onQuickView }: ProductCardProps) {
         </button>
       )}
 
-      <div className="p-4">
+      <div className="p-4 space-y-1.5">
+        {/* Name */}
         <Link href={`/product/${product.id}`}>
-          <h3 className="font-heading font-semibold text-foreground mb-1 line-clamp-1 hover:text-primary transition-colors">
+          <h3 className="font-heading font-semibold text-foreground line-clamp-1 hover:text-primary transition-colors">
             {product.name}
           </h3>
         </Link>
-        <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
-          {product.tagline}
-        </p>
+
+        {/* Terjual + Rating */}
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          {product.soldCount ? (
+            <span>Terjual {formatSoldCount(product.soldCount)}</span>
+          ) : <span />}
+          {rating > 0 && (
+            <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0.5">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    className={cn(
+                      'h-3 w-3',
+                      star <= filledStars ? 'fill-primary text-primary' : 'text-muted-foreground/30'
+                    )}
+                  />
+                ))}
+              </div>
+              <span className="font-semibold text-foreground">{rating}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Harga - Harga Coret + Diskon */}
+        {product.price ? (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <span className="font-heading font-bold text-base text-foreground">
+                {formatPrice(product.price)}
+              </span>
+              {product.originalPrice && product.originalPrice > product.price && (
+                <span className="text-xs text-muted-foreground line-through">
+                  {formatPrice(product.originalPrice)}
+                </span>
+              )}
+            </div>
+            {product.originalPrice && product.originalPrice > product.price && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200 shrink-0">
+                -{Math.round((1 - product.price / product.originalPrice) * 100)}%
+              </span>
+            )}
+          </div>
+        ) : null}
+
+        {/* Manfaat */}
         <div className="flex gap-1.5 flex-wrap">
           {product.benefits?.slice(0, 2).map((b, i) => (
-            <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-primary/5 text-primary">
+            <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-primary/5 text-primary whitespace-nowrap">
               {b}
             </span>
           ))}
