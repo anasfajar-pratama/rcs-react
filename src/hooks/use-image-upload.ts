@@ -94,6 +94,4 @@ export function useImageUpload() {
   }
 
   return { cropState, uploading, progress, startCrop, cancelCrop, handleCropResult, directUpload }
-
-  return { cropState, uploading, startCrop, cancelCrop, handleCropResult, directUpload }
 }

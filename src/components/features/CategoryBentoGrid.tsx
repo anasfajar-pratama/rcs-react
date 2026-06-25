@@ -1,85 +1,94 @@
+import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { Link } from 'wouter'
+import { ArrowRight } from 'lucide-react'
 import { useSiteSettings } from '../../hooks/use-site-settings'
 import { BRANDS } from '../../data/brands'
 
 const categories = [
-  { key: 'Wanita', size: 'lg' as const },
-  { key: 'Pria', size: 'sm' as const },
-  { key: 'Anak', size: 'sm' as const },
+  { key: 'Wanita', img: '/images/women-skincare.png' },
+  { key: 'Pria', img: '/images/men-skincare.png' },
+  { key: 'Anak', img: '/images/kids-skincare.png' },
 ]
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+}
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.15 },
+  },
+}
 
 export function CategoryBentoGrid() {
   const { settings } = useSiteSettings()
+  const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({})
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+    <motion.div
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: '-100px' }}
+      variants={staggerContainer}
+      className="grid grid-cols-1 gap-8 md:grid-cols-3"
+    >
       {categories.map((cat) => {
         const brand = BRANDS[cat.key]
-        const isLarge = cat.size === 'lg'
         const logo = settings[`logo_${brand.key}`]
+        const hero = settings[`hero_image_${brand.key}`]
         const brandName = settings[`brand_${brand.key}_name`] || brand.name
+        const hasHero = hero && !imgErrors[brand.key]
+        const imgSrc = hasHero ? hero : cat.img
 
         return (
-          <Link
+          <motion.div
+            variants={fadeUp}
             key={cat.key}
-            href={`/brand/${brand.slug}`}
-            className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${isLarge ? 'md:col-span-2 md:row-span-2 md:p-10' : ''}`}
-            style={{
-              background: `linear-gradient(135deg, ${brand.colorLight} 0%, white 60%, ${brand.colorLight}40 100%)`,
-              borderColor: `${brand.color}20`,
-            }}
+            className="group relative cursor-pointer overflow-hidden bg-secondary"
           >
-            <div
-              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-              style={{
-                background: `radial-gradient(ellipse at top right, ${brand.color}15 0%, transparent 70%)`,
-              }}
-            />
-            <div className="relative z-10 p-6 sm:p-8">
-              {logo ? (
-                <div className="w-16 h-16 mb-4 flex items-center justify-center">
-                  <img
-                    src={logo}
-                    alt={brandName}
-                    className={`max-w-full max-h-full object-contain ${
-                      settings[`logo_style_${brand.key}`] === 'circle'
-                        ? 'rounded-full'
-                        : settings[`logo_style_${brand.key}`] === 'square'
-                          ? 'rounded-none'
-                          : 'rounded-xl'
-                    }`}
-                  />
-                </div>
-              ) : (
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                  style={{ background: `${brand.color}20` }}
+            <div className="aspect-[4/5] overflow-hidden">
+              <img
+                src={imgSrc}
+                alt={brandName}
+                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                onError={() => setImgErrors((prev) => ({ ...prev, [brand.key]: true }))}
+              />
+            </div>
+            <div className="absolute inset-0 flex flex-col justify-between bg-gradient-to-t from-black/70 via-black/20 to-transparent p-6 text-white">
+              <div className="flex flex-col items-start gap-3">
+                {logo ? (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-lg border-2 border-primary bg-white/10 p-2 backdrop-blur-sm">
+                    <img src={logo} alt={brandName} className="max-h-full max-w-full object-contain" />
+                  </div>
+                ) : (
+                  <div
+                    className="flex h-16 w-16 items-center justify-center rounded-lg border-2 border-primary"
+                    style={{ background: `${brand.color}30` }}
+                  >
+                    <span className="text-xl font-bold text-white">{brandName.charAt(0)}</span>
+                  </div>
+                )}
+                <h3 className="font-serif text-3xl font-bold">{brandName}</h3>
+              </div>
+              <div>
+                <div className="mb-3 h-0.5 w-12 bg-primary" />
+                <p className="text-sm text-white/80">{brand.description}</p>
+                <Link
+                  href={`/brand/${brand.slug}`}
+                  className="mt-4 inline-flex items-center gap-2 text-primary opacity-0 transition-opacity duration-300 group-hover:opacity-100"
                 >
-                  <span className="font-heading font-bold text-lg" style={{ color: brand.color }}>
-                    {brandName.charAt(0)}
-                  </span>
-                </div>
-              )}
-              <h3
-                className={`font-heading font-bold mb-2 ${isLarge ? 'text-2xl' : 'text-lg'}`}
-                style={{ color: brand.colorDark }}
-              >
-                {brandName}
-              </h3>
-              <p className={`text-muted-foreground ${isLarge ? 'text-base' : 'text-sm'}`}>
-                {brand.description}
-              </p>
-              <div
-                className={`mt-4 text-sm font-medium transition-all flex items-center gap-2 group-hover:gap-3 ${isLarge ? 'text-base' : ''}`}
-                style={{ color: brand.color }}
-              >
-                Jelajahi Koleksi
-                <span className="transition-transform group-hover:translate-x-1">&rarr;</span>
+                  <span className="text-sm font-semibold uppercase tracking-wider">Jelajahi Koleksi</span>
+                  <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                </Link>
               </div>
             </div>
-          </Link>
+          </motion.div>
         )
       })}
-    </div>
+    </motion.div>
   )
 }
