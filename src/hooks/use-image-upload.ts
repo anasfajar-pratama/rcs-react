@@ -39,11 +39,11 @@ export function useImageUpload() {
     setProgress(0)
     try {
       const compressed = await compressImage(
-        new File([blob], state.file.name, { type: state.file.type || 'image/jpeg' }),
+        new File([blob], state.file.name.replace(/\.[^.]+$/, '.webp'), { type: 'image/webp' }),
         { onProgress: setProgress }
       )
       setProgress(95)
-      const safeFile = new File([compressed], state.file.name, { type: compressed.type || 'image/jpeg' })
+      const safeFile = new File([compressed], state.file.name.replace(/\.[^.]+$/, '.webp'), { type: 'image/webp' })
       const fd = new FormData()
       fd.append('image', safeFile)
       const res = await api.post('/admin/upload', fd, {
@@ -72,7 +72,7 @@ export function useImageUpload() {
     try {
       const compressed = await compressImage(file, { onProgress: setProgress })
       setProgress(95)
-      const safeFile = new File([compressed], file.name, { type: compressed.type || file.type || 'image/jpeg' })
+      const safeFile = new File([compressed], file.name.replace(/\.[^.]+$/, '.webp'), { type: 'image/webp' })
       const fd = new FormData()
       fd.append('image', safeFile)
       const res = await api.post('/admin/upload', fd, {

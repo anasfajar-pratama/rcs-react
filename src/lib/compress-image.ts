@@ -20,7 +20,7 @@ export async function compressImage(file: File, options: CompressOptions = {}): 
     maxSizeMB: MAX_SIZE_MB,
     maxWidthOrHeight: Math.max(maxWidth, maxHeight),
     useWebWorker: true,
-    fileType: file.type || 'image/jpeg',
+    fileType: 'image/webp',
     initialQuality: quality,
     onProgress,
   })

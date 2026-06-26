@@ -8,6 +8,8 @@ interface BeforeAfterSliderProps {
 }
 
 export function BeforeAfterSlider({
+  beforeImage,
+  afterImage,
   beforeLabel = 'Sebelum',
   afterLabel = 'Sesudah',
 }: BeforeAfterSliderProps) {
@@ -31,6 +33,8 @@ export function BeforeAfterSlider({
     document.addEventListener('mouseup', onMouseUp)
   }
 
+  const hasImages = beforeImage && afterImage
+
   return (
     <div className="space-y-3">
       <h4 className="font-heading font-semibold text-sm">Before / After</h4>
@@ -47,14 +51,33 @@ export function BeforeAfterSlider({
           if (touch) handleMove(touch.clientX)
         }}
       >
-        <div
-          className="absolute inset-0 bg-gradient-to-br from-accent/20 to-primary/20"
-          style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
-        />
-        <div
-          className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20"
-          style={{ clipPath: `inset(0 0 0 ${sliderPosition}%)` }}
-        />
+        {hasImages ? (
+          <>
+            <div
+              className="absolute inset-0"
+              style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
+            >
+              <img src={beforeImage} alt="Before" className="w-full h-full object-cover" />
+            </div>
+            <div
+              className="absolute inset-0"
+              style={{ clipPath: `inset(0 0 0 ${sliderPosition}%)` }}
+            >
+              <img src={afterImage} alt="After" className="w-full h-full object-cover" />
+            </div>
+          </>
+        ) : (
+          <>
+            <div
+              className="absolute inset-0 bg-gradient-to-br from-accent/20 to-primary/20"
+              style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
+            />
+            <div
+              className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20"
+              style={{ clipPath: `inset(0 0 0 ${sliderPosition}%)` }}
+            />
+          </>
+        )}
 
         <div
           className="absolute top-0 bottom-0 w-0.5 bg-white shadow-md z-10"

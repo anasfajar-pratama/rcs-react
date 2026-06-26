@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useRoute, Link } from 'wouter'
-import { ArrowLeft, Heart, Check, Scale, Ruler, Barcode, Award, BadgeCheck, FileText } from 'lucide-react'
+import { ArrowLeft, Heart, Check, Scale, Ruler, Barcode, Award, BadgeCheck, FileText, ChevronLeft, ChevronRight, ShoppingCart, Store, Music2, MessageCircle, Crown, Sparkles, Zap } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
@@ -13,12 +13,7 @@ import { useWishlist } from '../hooks/use-wishlist'
 import { cn, formatPrice } from '../lib/utils'
 import api from '../lib/api'
 import { fallbackProducts, type Product } from '../data/products'
-
-const brandColors: Record<string, string> = {
-  BLISERA: 'from-rose-400/20 to-pink-400/20',
-  FOKKA: 'from-blue-900/20 to-slate-800/20',
-  'PIJAR NALA': 'from-yellow-300/20 to-green-300/20',
-}
+import { getBrandByCategory } from '../data/brands'
 
 export default function ProductDetail() {
   const [, params] = useRoute('/product/:id')
@@ -28,12 +23,33 @@ export default function ProductDetail() {
   const [compareMode, setCompareMode] = useState(false)
   const [compareProducts, setCompareProducts] = useState<Product[]>([])
   const { isWishlisted, toggleItem } = useWishlist()
+  const [whatsappPhone, setWhatsappPhone] = useState('')
+
+  useEffect(() => {
+    api.get('/settings').then((res) => {
+      if (res.data?.whatsapp_phone) setWhatsappPhone(res.data.whatsapp_phone)
+    }).catch(() => {})
+  }, [])
+
+  const images = product?.images?.length ? product.images : []
+  const allImages = images.length > 0
+    ? images
+    : product?.imageUrl
+      ? [{ id: 0, imageUrl: product.imageUrl, isPrimary: true }]
+      : []
 
   useEffect(() => {
     if (!params?.id) return
     setLoading(true)
     api.get(`/products/${params.id}`).then((res) => {
-      setProduct(res.data)
+      const data = res.data
+      if (data) {
+        data.isPromo = !!data.isPromo
+        data.isNew = !!data.isNew
+        data.isFeatured = !!data.isFeatured
+        data.halalCertified = !!data.halalCertified
+      }
+      setProduct(data)
     }).catch(() => {
       const found = fallbackProducts.find((p) => p.id === Number(params.id)) || null
       setProduct(found)
@@ -43,6 +59,16 @@ export default function ProductDetail() {
   useEffect(() => {
     setActiveImage(0)
   }, [product?.id])
+
+  useEffect(() => {
+    if (!allImages.length || allImages.length <= 1) return
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') setActiveImage((prev) => (prev - 1 + allImages.length) % allImages.length)
+      if (e.key === 'ArrowRight') setActiveImage((prev) => (prev + 1) % allImages.length)
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [allImages.length])
 
   useEffect(() => {
     if (product && !compareProducts.find((p) => p.id === product.id)) {
@@ -79,16 +105,11 @@ export default function ProductDetail() {
   }
 
   const wishlisted = isWishlisted(product.id)
-  const images = product.images?.length ? product.images : []
-  const allImages = images.length > 0
-    ? images
-    : product.imageUrl
-      ? [{ id: 0, imageUrl: product.imageUrl, isPrimary: true }]
-      : []
+  const discountPercent = product.originalPrice && product.price && product.originalPrice > product.price
+    ? Math.round((1 - product.price / product.originalPrice) * 100) : 0
 
-  const brand = product.subcategory?.category === 'Wanita' ? 'BLISERA'
-    : product.subcategory?.category === 'Pria' ? 'FOKKA'
-    : 'PIJAR NALA'
+  const brandConfig = getBrandByCategory(product.category)
+  const brandName = brandConfig?.name || product.category
 
   const defaultSpecs = [
     { label: 'Material', value: product.ingredients || 'Premium food-grade' },
@@ -101,23 +122,24 @@ export default function ProductDetail() {
   return (
     <div className="pt-24 pb-16 sm:pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Link href={product.category === 'Wanita' ? '/brand/blisera' : product.category === 'Pria' ? '/brand/fokka' : '/brand/pijar-nala'} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
+        <Link href={brandConfig ? `/brand/${brandConfig.slug}` : '/'} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
           <ArrowLeft className="h-4 w-4" /> Kembali ke Koleksi
         </Link>
 
         <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
-          {/* Image Gallery */}
+          {/* Image Gallery - Slider */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
+            className="relative"
           >
             <div className={cn(
-              "aspect-square rounded-2xl bg-gradient-to-br flex items-center justify-center p-8 mb-4 relative overflow-hidden",
-              brandColors[brand] || 'from-primary/10 to-accent/10'
-            )}>
-              {allImages.length > 0 && allImages[0]?.imageUrl ? (
+              "aspect-square rounded-2xl flex items-center justify-center p-8 relative overflow-hidden",
+            )} style={{ background: `linear-gradient(135deg, ${brandConfig?.colorLight || '#f0ebe6'} 0%, white 60%, ${brandConfig?.colorLight || '#f0ebe6'}40 100%)` }}>
+              {allImages.length > 0 && allImages[activeImage]?.imageUrl ? (
                 <img
-                  src={allImages[activeImage]?.imageUrl || allImages[0]?.imageUrl}
+                  key={activeImage}
+                  src={allImages[activeImage]?.imageUrl}
                   alt={product.name}
                   className="w-full h-full object-contain drop-shadow-xl"
                 />
@@ -128,41 +150,114 @@ export default function ProductDetail() {
                   </span>
                 </div>
               )}
-              {product.isNew && (
-                <Badge variant="default" className="absolute top-4 left-4">Baru</Badge>
+              {product.isFeatured && (
+                <div
+                  className="absolute top-0 left-0 z-10 flex flex-col items-center pointer-events-none"
+                  style={{
+                    clipPath: 'polygon(0% 0%, 100% 0%, 100% 75%, 50% 100%, 0% 75%)',
+                    background: 'linear-gradient(180deg, #fbbf24 0%, #eab308 25%, #d97706 60%, #ea580c 100%)',
+                    width: 78,
+                    padding: '12px 10px 18px',
+                  }}
+                >
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      clipPath: 'polygon(0% 0%, 100% 0%, 100% 75%, 50% 100%, 0% 75%)',
+                      background: 'linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 50%)',
+                    }}
+                  />
+                  <Crown className="h-[17px] w-[17px] text-white drop-shadow-sm" />
+                  <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/90 leading-none mt-1">
+                    TOP
+                  </span>
+                </div>
               )}
-              {product.isPromo && (
-                <Badge variant="destructive" className="absolute top-4 right-4">Promo</Badge>
+              <div className="absolute top-4 right-4 flex flex-col gap-2 items-end">
+                {product.isNew && (
+                  <div className="rounded-full bg-yellow-400 px-3 py-1 shadow-lg shadow-yellow-400/30">
+                    <span className="flex items-center gap-1.5 text-yellow-900 text-[11px] font-bold tracking-wider">
+                      <Sparkles className="h-3.5 w-3.5" /> Produk Baru
+                    </span>
+                  </div>
+                )}
+                {product.isPromo && discountPercent > 0 && (
+                  <div className="rounded-lg bg-red-600 px-3 py-1 shadow-lg shadow-red-600/30">
+                    <span className="flex items-center gap-1.5 text-white text-[12px] font-heading font-extrabold tracking-wider">
+                      <Zap className="h-3.5 w-3.5" /> Extra Promo -{discountPercent}%
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {allImages.length > 1 && (
+                <>
+                  <button
+                    onClick={() => setActiveImage((prev) => (prev - 1 + allImages.length) % allImages.length)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm shadow-md flex items-center justify-center hover:bg-white transition-all"
+                  >
+                    <ChevronLeft className="h-5 w-5 text-foreground" />
+                  </button>
+                  <button
+                    onClick={() => setActiveImage((prev) => (prev + 1) % allImages.length)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm shadow-md flex items-center justify-center hover:bg-white transition-all"
+                  >
+                    <ChevronRight className="h-5 w-5 text-foreground" />
+                  </button>
+                </>
               )}
             </div>
+
             {allImages.length > 1 && (
-              <div className="flex gap-3 overflow-x-auto pb-2">
-                {allImages.map((img, i) => (
-                  <button
-                    key={img.id}
-                    onClick={() => setActiveImage(i)}
-                    className={cn(
-                      "w-20 h-20 rounded-xl border-2 overflow-hidden shrink-0 transition-all",
-                      activeImage === i ? 'border-primary' : 'border-border hover:border-primary/50'
-                    )}
-                  >
-                    {img.imageUrl ? (
-                      <img src={img.imageUrl} alt={`${product.name} ${i + 1}`} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center">
-                        <span className="font-heading text-xl font-bold text-primary/20">{i + 1}</span>
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
+              <>
+                <div className="flex justify-center gap-2 mt-4">
+                  {allImages.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveImage(i)}
+                      className={cn(
+                        "w-2.5 h-2.5 rounded-full transition-all",
+                        activeImage === i ? "bg-primary w-6" : "bg-border hover:bg-primary/50"
+                      )}
+                    />
+                  ))}
+                </div>
+                <div className="flex gap-3 mt-4 overflow-x-auto pb-1">
+                  {allImages.map((img, i) => (
+                    <button
+                      key={img.id}
+                      onClick={() => setActiveImage(i)}
+                      className={cn(
+                        "w-16 h-16 rounded-xl border-2 overflow-hidden shrink-0 transition-all",
+                        activeImage === i ? 'border-primary' : 'border-border hover:border-primary/50'
+                      )}
+                    >
+                      {img.imageUrl ? (
+                        <img src={img.imageUrl} alt={`${product.name} ${i + 1}`} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center">
+                          <span className="font-heading text-lg font-bold text-primary/20">{i + 1}</span>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
           </motion.div>
 
           {/* Product Info */}
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
             <div className="flex items-center gap-2 mb-3">
-              <Badge variant="outline">{product.category}</Badge>
+              <Badge
+                style={{
+                  backgroundColor: brandConfig?.color || '#D4A574',
+                  color: '#fff',
+                  borderColor: brandConfig?.color || '#D4A574',
+                }}
+              >
+                {brandName}
+              </Badge>
               {product.subcategory && (
                 <Badge variant="outline">{product.subcategory.name}</Badge>
               )}
@@ -171,13 +266,23 @@ export default function ProductDetail() {
             <h1 className="font-heading text-3xl sm:text-4xl font-bold mb-2">{product.name}</h1>
             <p className="text-muted-foreground mb-4">{product.tagline}</p>
 
-            {product.price && (
-              <p className="text-2xl font-bold text-primary mb-6">{formatPrice(product.price)}</p>
+            {product.price != null && (
+              <div className="flex items-center gap-3 mb-6">
+                <p className="text-2xl font-bold" style={{ color: brandConfig?.colorDark || 'var(--color-foreground)' }}>{formatPrice(product.price)}</p>
+                {product.originalPrice != null && product.originalPrice > product.price && (
+                  <>
+                    <p className="text-lg text-muted-foreground line-through">{formatPrice(product.originalPrice)}</p>
+                    <span className="text-xs font-semibold text-white bg-destructive px-2 py-0.5 rounded-full">
+                      -{Math.round((1 - product.price / product.originalPrice) * 100)}%
+                    </span>
+                  </>
+                )}
+              </div>
             )}
 
             {product.description && (
               <div className="mb-6">
-                <p className="text-sm text-muted-foreground leading-relaxed">{product.description}</p>
+                <p className="text-base text-foreground/80 leading-relaxed tracking-wide max-w-prose text-justify">{product.description}</p>
               </div>
             )}
 
@@ -188,7 +293,7 @@ export default function ProductDetail() {
                 <ul className="grid grid-cols-2 gap-2">
                   {product.benefits.map((b, i) => (
                     <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Check className="h-4 w-4 text-primary shrink-0" />
+                      <Check className="h-4 w-4 shrink-0" style={{ color: brandConfig?.color || 'var(--color-primary)' }} />
                       {b}
                     </li>
                   ))}
@@ -202,8 +307,8 @@ export default function ProductDetail() {
                 <h3 className="font-semibold text-sm mb-3">Cara Pakai:</h3>
                 <ol className="space-y-2">
                   {product.howToUse.map((step, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm text-muted-foreground">
-                      <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                    <li key={i} className="flex items-start gap-3 text-sm text-muted-foreground text-justify">
+                      <span className="w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: `${brandConfig?.color || 'var(--color-primary)'}20`, color: brandConfig?.color || 'var(--color-primary)' }}>
                         {i + 1}
                       </span>
                       {step}
@@ -217,7 +322,7 @@ export default function ProductDetail() {
             {product.ingredients && (
               <div className="mb-6">
                 <h3 className="font-semibold text-sm mb-2">Bahan:</h3>
-                <p className="text-sm text-muted-foreground">{product.ingredients}</p>
+                <p className="text-base text-foreground/80 leading-relaxed tracking-wide text-justify">{product.ingredients}</p>
               </div>
             )}
 
@@ -267,6 +372,46 @@ export default function ProductDetail() {
               </div>
             )}
 
+            {(product.shopeeUrl || product.tokopediaUrl || product.tiktokUrl || whatsappPhone) && (
+              <div className="mb-6">
+                <h3 className="font-semibold text-sm mb-3">Beli di:</h3>
+                <div className="flex flex-wrap gap-2">
+                  {product.shopeeUrl && (
+                    <a href={product.shopeeUrl} target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <ShoppingCart className="h-4 w-4 text-orange-500" /> Shopee
+                      </Button>
+                    </a>
+                  )}
+                  {product.tokopediaUrl && (
+                    <a href={product.tokopediaUrl} target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Store className="h-4 w-4 text-green-600" /> Tokopedia
+                      </Button>
+                    </a>
+                  )}
+                  {product.tiktokUrl && (
+                    <a href={product.tiktokUrl} target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Music2 className="h-4 w-4" /> TikTok
+                      </Button>
+                    </a>
+                  )}
+                  {whatsappPhone && (
+                    <a
+                      href={`https://wa.me/${whatsappPhone}?text=${encodeURIComponent(`Halo, saya ingin bertanya tentang produk ${product.name}\n\nLink produk: ${window.location.origin}/product/${product.id}`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <MessageCircle className="h-4 w-4 text-green-500" /> WhatsApp
+                      </Button>
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
             <Separator className="mb-6" />
 
             <div className="flex flex-wrap gap-3">
@@ -290,7 +435,7 @@ export default function ProductDetail() {
 
         {/* Before/After + Tech Specs */}
         <div className="grid md:grid-cols-2 gap-8 mt-12">
-          <BeforeAfterSlider />
+          <BeforeAfterSlider beforeImage={product.beforeImage || undefined} afterImage={product.afterImage || undefined} />
           <TechSpecs specs={defaultSpecs} />
         </div>
 

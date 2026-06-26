@@ -4,17 +4,12 @@ import { Heart, Eye, Crown, Star } from 'lucide-react'
 import { useWishlist } from '../../hooks/use-wishlist'
 import { cn, formatPrice } from '../../lib/utils'
 import type { Product } from '../../data/products'
+import { getBrandByCategory } from '../../data/brands'
 
 interface ProductCardProps {
   product: Product
   onQuickView?: (product: Product) => void
   rank?: number
-}
-
-const brandConfig: Record<string, { name: string; bg: string; text: string }> = {
-  Wanita: { name: 'BLISERA', bg: '#B76E79', text: '#FFFFFF' },
-  Pria: { name: 'FOKKA', bg: '#4A5568', text: '#FFFFFF' },
-  Anak: { name: 'PIJAR NALA', bg: '#C3E6FC', text: '#2D3748' },
 }
 
 function formatSoldCount(count?: number): string {
@@ -31,7 +26,12 @@ export function ProductCard({ product, onQuickView, rank }: ProductCardProps) {
   const [imgError, setImgError] = useState(false)
 
   const productImage = product.images?.[0]?.imageUrl || product.imageUrl
-  const brand = brandConfig[product.category]
+  const brandCfg = getBrandByCategory(product.category)
+  const brand = {
+    name: brandCfg?.name || product.category,
+    bg: brandCfg?.color || '#D4A574',
+    text: brandCfg?.name === 'PIJAR NALA' ? '#2D3748' : '#FFFFFF',
+  }
   const rating = product.rating ?? 0
   const filledStars = Math.round(rating)
 
