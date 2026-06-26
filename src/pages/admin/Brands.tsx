@@ -1,11 +1,12 @@
 import { useEffect, useState, useRef } from 'react'
-import { motion } from 'framer-motion'
-import { Save, ImagePlus, Loader2 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Save, ImagePlus, Loader2, ArrowLeft, Settings2 } from 'lucide-react'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
 import { ImageCropperModal } from '../../components/ui/image-cropper-modal'
-import { AdminLayout } from './AdminLayout'
+import { RichEditor } from '../../components/ui/rich-editor'
+import { AdminLayout, AdminLoader } from './AdminLayout'
 import api from '../../lib/api'
 import { toast } from 'sonner'
 import { validateFileSize } from '../../lib/compress-image'
@@ -30,12 +31,27 @@ function isBrandKey(key: string): string | null {
   return null
 }
 
+const FIELD_LABELS: Record<string, string> = {
+  logo: 'Logo',
+  logo_style: 'Bentuk Logo',
+  hero_image: 'Gambar Hero',
+  name: 'Nama Brand',
+  tagline: 'Tagline',
+  description: 'Deskripsi',
+  about: 'Tentang',
+}
+
 export default function AdminBrands() {
   const [settings, setSettings] = useState<Setting[]>([])
   const [loading, setLoading] = useState(true)
-  const [savingBrand, setSavingBrand] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null)
   const [edited, setEdited] = useState<Record<string, string>>({})
+  const [rev, setRev] = useState(0)
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+
+  const { cropState, uploading, progress, startCrop, cancelCrop, handleCropResult, directUpload } = useImageUpload()
+  const [skipCrop, setSkipCrop] = useState<Record<string, boolean>>({})
 
   const load = () => {
     setLoading(true)
@@ -52,9 +68,28 @@ export default function AdminBrands() {
 
   useEffect(() => { load() }, [])
 
-  const { cropState, uploading, progress, startCrop, cancelCrop, handleCropResult, directUpload } = useImageUpload()
-  const [skipCrop, setSkipCrop] = useState<Record<string, boolean>>({})
-  const [rev, setRev] = useState(0)
+  const brandSettings = settings.filter((s) => s.group === 'brands')
+
+  const brandSections: BrandSection[] = brandKeys.map((bk) => {
+    const brand = Object.values(BRANDS).find((b) => b.key === bk)
+    return {
+      key: bk,
+      name: brand?.name || bk.toUpperCase(),
+      color: brand?.color || '#6B7280',
+      colorLight: brand?.colorLight || '#F3F4F6',
+      items: brandSettings.filter((s) => isBrandKey(s.key) === bk),
+    }
+  })
+
+  const selectedSection = selectedBrand ? brandSections.find((s) => s.key === selectedBrand) : null
+
+  const handleSelectBrand = (key: string) => {
+    setSelectedBrand(key)
+  }
+
+  const handleBack = () => {
+    setSelectedBrand(null)
+  }
 
   const handleUploadClick = (key: string, e: React.ChangeEvent<HTMLInputElement>, shape: 'round' | 'rect') => {
     const file = e.target.files?.[0]
@@ -72,39 +107,30 @@ export default function AdminBrands() {
     if (skipCrop[key]) {
       directUpload(file, onDone)
     } else {
-      startCrop(file, shape, 1, onDone)
+      startCrop(file, shape, key.startsWith('hero_') ? 16/9 : 1, onDone)
     }
   }
 
-  const handleSave = async (items: Setting[], brandName: string) => {
-    setSavingBrand(brandName)
+  const handleSave = async () => {
+    if (!selectedSection) return
+    setSaving(true)
     try {
-      const promises = items.map((s) =>
+      const promises = selectedSection.items.map((s) =>
         api.put(`/admin/settings/${s.id}`, { value: edited[s.key] ?? '' })
       )
       await Promise.all(promises)
-      toast.success(`Pengaturan ${brandName} berhasil disimpan`)
+      toast.success(`Pengaturan ${selectedSection.name} berhasil disimpan`)
+      load()
     } catch {
-      toast.error(`Gagal menyimpan pengaturan ${brandName}`)
+      toast.error(`Gagal menyimpan pengaturan ${selectedSection.name}`)
     } finally {
-      setSavingBrand(null)
+      setSaving(false)
     }
   }
 
-  const brandSettings = settings.filter((s) => s.group === 'brands')
-
-  const brandSections: BrandSection[] = brandKeys.map((bk) => {
-    const brand = Object.values(BRANDS).find((b) => b.key === bk)
-    return {
-      key: bk,
-      name: brand?.name || bk.toUpperCase(),
-      color: brand?.color || '#6B7280',
-      colorLight: brand?.colorLight || '#F3F4F6',
-      items: brandSettings.filter((s) => isBrandKey(s.key) === bk),
-    }
-  })
-
   const renderField = (setting: Setting) => {
+    const isRich = setting.key.endsWith('_description') || setting.key.endsWith('_about')
+
     if (setting.key.startsWith('logo_style_')) {
       const value = edited[setting.key] || 'rounded'
       const options = [
@@ -134,9 +160,8 @@ export default function AdminBrands() {
 
     if (setting.type === 'image') {
       const isHero = setting.key.startsWith('hero_image_')
-      const isUploading = uploading
       const src = edited[setting.key]
-      const showProgress = isUploading && progress > 0 && progress < 100
+      const showProgress = uploading && progress > 0 && progress < 100
       return (
         <div className="space-y-2">
           {isHero && (
@@ -147,7 +172,7 @@ export default function AdminBrands() {
           {src && (
             <div className={`relative rounded-xl border border-border overflow-hidden bg-white flex items-center justify-center p-3 ${isHero ? 'w-full aspect-video' : 'w-32 h-32'}`}>
               <img src={`${src}${rev > 0 ? `?rev=${rev}` : ''}`} alt={isHero ? 'Hero' : 'Logo'} className="w-full h-full object-contain" />
-              {isUploading && (
+              {uploading && (
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-xl">
                   <Loader2 className="h-6 w-6 animate-spin text-white" />
                 </div>
@@ -160,11 +185,11 @@ export default function AdminBrands() {
               type="file" accept="image/*" className="hidden"
               onChange={(e) => handleUploadClick(setting.key, e, isHero ? 'rect' : 'round')}
             />
-            <Button variant="outline" size="sm" className="gap-2" disabled={isUploading} onClick={() => fileInputRefs.current[setting.key]?.click()}>
-              {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
-              {isUploading ? 'Mengupload...' : src ? (isHero ? 'Ganti Gambar Hero' : 'Ganti Logo') : (isHero ? 'Upload Gambar Hero' : 'Upload Logo')}
+            <Button variant="outline" size="sm" className="gap-2" disabled={uploading} onClick={() => fileInputRefs.current[setting.key]?.click()}>
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+              {uploading ? 'Mengupload...' : src ? (isHero ? 'Ganti Gambar Hero' : 'Ganti Logo') : (isHero ? 'Upload Gambar Hero' : 'Upload Logo')}
             </Button>
-            {src && !isUploading && (
+            {src && !uploading && (
               <Button variant="ghost" size="sm" onClick={() => setEdited((prev) => ({ ...prev, [setting.key]: '' }))}>
                 Hapus
               </Button>
@@ -191,6 +216,14 @@ export default function AdminBrands() {
     }
 
     if (setting.type === 'text') {
+      if (isRich) {
+        return (
+          <RichEditor
+            value={edited[setting.key] ?? ''}
+            onChange={(v) => setEdited((prev) => ({ ...prev, [setting.key]: v }))}
+          />
+        )
+      }
       return (
         <textarea
           className="flex w-full rounded-xl border border-border bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary resize-none"
@@ -205,85 +238,123 @@ export default function AdminBrands() {
     )
   }
 
+  if (loading) {
+    return (
+      <AdminLayout>
+        <AdminLoader />
+      </AdminLayout>
+    )
+  }
+
   return (
     <AdminLayout>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <div className="mb-6">
           <h1 className="font-heading text-2xl font-bold">Brand</h1>
-          <p className="text-sm text-muted-foreground">Atur logo, tagline, dan deskripsi setiap brand</p>
+          <p className="text-sm text-muted-foreground">
+            {selectedSection ? `Kelola ${selectedSection.name}` : 'Pilih brand untuk dikelola'}
+          </p>
         </div>
 
-        {loading ? (
-          <div className="text-center py-12 text-muted-foreground">Memuat...</div>
-        ) : (
-          <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
-            {brandSections.map((brandSec) => (
-              <div
-                key={brandSec.key}
-                className="rounded-2xl bg-white border overflow-hidden"
-                style={{ borderColor: `${brandSec.color}30` }}
-              >
-                <div
-                  className="px-6 py-5"
-                  style={{ background: `linear-gradient(135deg, ${brandSec.colorLight} 0%, white 80%)` }}
-                >
-                  <div className="flex items-center gap-3">
+        <AnimatePresence mode="wait">
+          {!selectedBrand ? (
+            <motion.div
+              key="overview"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="grid gap-6 md:grid-cols-3"
+            >
+              {brandSections.map((brandSec) => {
+                const logoSetting = brandSec.items.find((s) => s.key === `logo_${brandSec.key}`)
+                const logoUrl = logoSetting ? edited[logoSetting.key] : ''
+                return (
+                  <div
+                    key={brandSec.key}
+                    className="rounded-2xl bg-white border border-border overflow-hidden hover:shadow-lg transition-shadow group"
+                  >
                     <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center text-base font-bold"
-                      style={{ background: brandSec.color, color: 'white' }}
+                      className="p-8 flex flex-col items-center gap-4"
+                      style={{ background: `linear-gradient(180deg, ${brandSec.colorLight} 0%, white 80%)` }}
                     >
-                      {brandSec.name.charAt(0)}
+                      {logoUrl ? (
+                        <div className="w-24 h-24 rounded-full border-4 border-white shadow-md overflow-hidden bg-white flex items-center justify-center">
+                          <img src={logoUrl} alt={brandSec.name} className="w-full h-full object-contain" />
+                        </div>
+                      ) : (
+                        <div
+                          className="w-24 h-24 rounded-full border-4 border-white shadow-md flex items-center justify-center text-3xl font-bold text-white"
+                          style={{ background: brandSec.color }}
+                        >
+                          {brandSec.name.charAt(0)}
+                        </div>
+                      )}
+                      <div className="text-center">
+                        <h2 className="font-heading text-xl font-bold" style={{ color: brandSec.color }}>
+                          {brandSec.name}
+                        </h2>
+                      </div>
                     </div>
-                    <div>
-                      <h2 className="font-heading font-semibold text-lg" style={{ color: brandSec.color }}>
-                        {brandSec.name}
-                      </h2>
-                      <p className="text-xs text-muted-foreground">{brandSec.items.length} pengaturan</p>
+                    <div className="p-4 flex justify-center">
+                      <Button
+                        variant="outline"
+                        className="gap-2 w-full"
+                        onClick={() => handleSelectBrand(brandSec.key)}
+                      >
+                        <Settings2 className="h-4 w-4" />
+                        Kelola
+                      </Button>
                     </div>
                   </div>
-                </div>
+                )
+              })}
+            </motion.div>
+          ) : selectedSection ? (
+            <motion.div
+              key="detail"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              <div className="mb-6">
+                <Button variant="ghost" size="sm" className="gap-2 mb-4" onClick={handleBack}>
+                  <ArrowLeft className="h-4 w-4" />
+                  Kembali
+                </Button>
+              </div>
 
-                <div className="px-6 py-4 space-y-5">
-                  {brandSec.items.map((s) => {
-                    const label = s.key
-                      .replace(`logo_style_${brandSec.key}`, 'Bentuk Logo')
-                      .replace(`logo_${brandSec.key}`, 'Logo')
-                      .replace(`hero_image_${brandSec.key}`, 'Gambar Hero')
-                      .replace(`brand_${brandSec.key}_`, '')
-                      .replace(/_/g, ' ')
-                      .replace(/\b\w/g, (l) => l.toUpperCase())
-                    return (
-                      <div key={s.id} className="space-y-1.5">
+              <div className="max-w-2xl space-y-6">
+                {selectedSection.items.map((s) => {
+                  const key = s.key
+                    .replace(`logo_style_${selectedSection.key}`, 'logo_style')
+                    .replace(`logo_${selectedSection.key}`, 'logo')
+                    .replace(`hero_image_${selectedSection.key}`, 'hero_image')
+                    .replace(`brand_${selectedSection.key}_`, '')
+                  const label = FIELD_LABELS[key] || key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
+
+                  return (
+                    <div key={s.id} className="p-6 rounded-2xl bg-white border border-border space-y-3">
+                      <div>
                         <Label className="text-sm font-medium">{label}</Label>
                         {s.description && (
-                          <p className="text-xs text-muted-foreground">{s.description}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{s.description}</p>
                         )}
-                        {renderField(s)}
                       </div>
-                    )
-                  })}
-                </div>
+                      {renderField(s)}
+                    </div>
+                  )
+                })}
 
-                <div className="px-6 py-4 border-t flex justify-end" style={{ borderColor: `${brandSec.color}20` }}>
-                  <Button
-                    onClick={() => handleSave(brandSec.items, brandSec.name)}
-                    disabled={savingBrand === brandSec.name}
-                    size="sm"
-                    className="gap-2"
-                    style={{
-                      background: brandSec.color,
-                      color: 'white',
-                      border: 'none',
-                    }}
-                  >
-                    <Save className="h-4 w-4" />
-                    {savingBrand === brandSec.name ? 'Menyimpan...' : 'Simpan'}
+                <div className="flex justify-end pt-2">
+                  <Button onClick={handleSave} disabled={saving} className="gap-2 min-w-[140px]">
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    {saving ? 'Menyimpan...' : 'Simpan'}
                   </Button>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
 
         {cropState && (
           <ImageCropperModal

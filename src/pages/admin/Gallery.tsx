@@ -9,7 +9,7 @@ import { ImageCropperModal } from '../../components/ui/image-cropper-modal'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../components/ui/alert-dialog'
 import { Badge } from '../../components/ui/badge'
-import { AdminLayout } from './AdminLayout'
+import { AdminLayout, AdminLoader } from './AdminLayout'
 import api from '../../lib/api'
 import { toast } from 'sonner'
 import { useImageUpload } from '../../hooks/use-image-upload'
@@ -114,7 +114,7 @@ export default function AdminGallery() {
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-muted-foreground">Memuat...</div>
+          <AdminLoader />
         ) : items.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 rounded-2xl border-2 border-dashed border-border flex items-center justify-center mx-auto mb-4">

@@ -5,7 +5,7 @@ import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
 import { ImageCropperModal } from '../../components/ui/image-cropper-modal'
-import { AdminLayout } from './AdminLayout'
+import { AdminLayout, AdminLoader } from './AdminLayout'
 import api from '../../lib/api'
 import { toast } from 'sonner'
 import { validateFileSize } from '../../lib/compress-image'
@@ -150,7 +150,7 @@ export default function AdminSettings() {
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-muted-foreground">Memuat...</div>
+          <AdminLoader />
         ) : (
           <div className="space-y-6">
             {Object.entries(regularGroups).map(([group, items]) => {

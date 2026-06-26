@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
-import { AdminLayout } from './AdminLayout'
+import { AdminLayout, AdminLoader } from './AdminLayout'
 import api from '../../lib/api'
 import type { ActivityLog } from '../../data/admin'
 import { format } from 'date-fns'
@@ -91,7 +91,7 @@ export default function AdminActivityLogs() {
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-muted-foreground">Memuat...</div>
+          <AdminLoader />
         ) : logs.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">Belum ada aktivitas</div>
         ) : (

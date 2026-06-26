@@ -3,8 +3,9 @@ import { motion } from 'framer-motion'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
+import { RichEditor } from '../../components/ui/rich-editor'
 import { ImageCropperModal } from '../../components/ui/image-cropper-modal'
-import { AdminLayout } from './AdminLayout'
+import { AdminLayout, AdminLoader } from './AdminLayout'
 import api from '../../lib/api'
 import { toast } from 'sonner'
 import { ImagePlus, Loader2 } from 'lucide-react'
@@ -58,8 +59,7 @@ const sections = [
     title: 'Tentang Kami',
     fields: [
       { key: 'about_title', label: 'Judul', multiline: false },
-      { key: 'about_text1', label: 'Paragraf 1', multiline: true },
-      { key: 'about_text2', label: 'Paragraf 2', multiline: true },
+      { key: 'about_text', label: 'Teks', richText: true },
       { key: 'about_quote', label: 'Kutipan', multiline: true },
     ],
     hasImage: true,
@@ -116,7 +116,7 @@ export default function AdminHomepage() {
   if (loading) {
     return (
       <AdminLayout>
-        <div className="text-center py-12 text-muted-foreground">Memuat...</div>
+        <AdminLoader />
       </AdminLayout>
     )
   }
@@ -166,7 +166,13 @@ export default function AdminHomepage() {
                 {section.fields.map((field) => (
                   <div key={field.key} className="space-y-2">
                     <Label>{field.label}</Label>
-                    {field.multiline ? (
+                    {(field as any).richText ? (
+                      <RichEditor
+                        value={content[field.key] || ''}
+                        onChange={(v) => setContent({ ...content, [field.key]: v })}
+                        placeholder={`Tulis ${field.label.toLowerCase()}...`}
+                      />
+                    ) : field.multiline ? (
                       <textarea
                         className="flex w-full rounded-xl border border-border bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary resize-none"
                         rows={3}

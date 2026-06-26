@@ -7,7 +7,7 @@ import { Label } from '../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../components/ui/alert-dialog'
-import { AdminLayout } from './AdminLayout'
+import { AdminLayout, AdminLoader } from './AdminLayout'
 import api from '../../lib/api'
 import { toast } from 'sonner'
 import { fallbackSubcategories, type Subcategory } from '../../data/products'
@@ -93,7 +93,7 @@ export default function AdminSubcategories() {
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-muted-foreground">Memuat...</div>
+          <AdminLoader />
         ) : (
           <div className="space-y-6">
             {grouped.map(({ category, items }) => (
