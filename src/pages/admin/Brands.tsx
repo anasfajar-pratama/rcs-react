@@ -26,7 +26,7 @@ interface BrandSection {
 
 function isBrandKey(key: string): string | null {
   for (const bk of brandKeys) {
-    if (key === `logo_${bk}` || key === `hero_image_${bk}` || key === `logo_style_${bk}` || key.startsWith(`brand_${bk}_`)) return bk
+    if (key === `logo_${bk}` || key === `logo_style_${bk}` || key.startsWith(`brand_${bk}_`)) return bk
   }
   return null
 }
@@ -34,7 +34,6 @@ function isBrandKey(key: string): string | null {
 const FIELD_LABELS: Record<string, string> = {
   logo: 'Logo',
   logo_style: 'Bentuk Logo',
-  hero_image: 'Gambar Hero',
   name: 'Nama Brand',
   tagline: 'Tagline',
   description: 'Deskripsi',
@@ -68,7 +67,7 @@ export default function AdminBrands() {
 
   useEffect(() => { load() }, [])
 
-  const brandSettings = settings.filter((s) => s.group === 'brands')
+  const brandSettings = settings.filter((s) => s.group === 'brands' && !s.key.startsWith('hero_image_'))
 
   const brandSections: BrandSection[] = brandKeys.map((bk) => {
     const brand = Object.values(BRANDS).find((b) => b.key === bk)
