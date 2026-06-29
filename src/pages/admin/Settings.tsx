@@ -4,6 +4,7 @@ import { Save, ImagePlus, Loader2 } from 'lucide-react'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
+import { Switch } from '../../components/ui/switch'
 import { ImageCropperModal } from '../../components/ui/image-cropper-modal'
 import { AdminLayout, AdminLoader } from './AdminLayout'
 import api from '../../lib/api'
@@ -17,6 +18,7 @@ const groupLabels: Record<string, string> = {
   seo: 'SEO',
   social: 'Media Sosial',
   contact: 'Kontak',
+  features: 'Fitur',
 }
 
 const groupIcons: Record<string, string> = {
@@ -24,6 +26,7 @@ const groupIcons: Record<string, string> = {
   seo: '🔍',
   social: '🌐',
   contact: '📞',
+  features: '🚀',
 }
 
 export default function AdminSettings() {
@@ -112,6 +115,18 @@ export default function AdminSettings() {
           rows={3} value={edited[setting.key] ?? ''}
           onChange={(e) => setEdited((prev) => ({ ...prev, [setting.key]: e.target.value }))}
         />
+      )
+    }
+
+    if (setting.type === 'boolean') {
+      return (
+        <div className="flex items-center gap-3 h-10">
+          <Switch
+            checked={edited[setting.key] === '1'}
+            onCheckedChange={(v) => setEdited((prev) => ({ ...prev, [setting.key]: v ? '1' : '0' }))}
+          />
+          <span className="text-sm text-muted-foreground">{edited[setting.key] === '1' ? 'Aktif' : 'Nonaktif'}</span>
+        </div>
       )
     }
 

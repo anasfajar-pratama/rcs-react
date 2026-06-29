@@ -31,6 +31,7 @@ import AdminActivityLogs from './pages/admin/ActivityLogs'
 import AdminAdmins from './pages/admin/Admins'
 import AdminRoles from './pages/admin/Roles'
 import AdminHeroes from './pages/admin/Heroes'
+import AdminLegalAchievements from './pages/admin/LegalAchievements'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false } },
@@ -119,6 +120,7 @@ export default function App() {
             <Route path="/admin/admins" component={requireAdmin(AdminAdmins)} />
             <Route path="/admin/roles" component={requireAdmin(AdminRoles)} />
             <Route path="/admin/heroes" component={requireAdmin(AdminHeroes)} />
+            <Route path="/admin/legal-achievements" component={requireAdmin(AdminLegalAchievements)} />
             <Route path="/">
               <PublicLayout><Home /></PublicLayout>
             </Route>

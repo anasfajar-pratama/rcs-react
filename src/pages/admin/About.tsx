@@ -290,76 +290,12 @@ export default function AdminAbout() {
               })}
             </div>
           </div>
-          {/* Perizinan */}
+          {/* Legal & Achievement dikelola di halaman terpisah */}
           <div className="bg-white rounded-2xl border border-border p-6">
-            <h2 className="font-heading text-lg font-bold mb-4 pb-3 border-b border-border">Perizinan</h2>
-            <div className="mb-6">
-              <FieldInput field={{ key: 'about_permit_title', label: 'Judul H1' }} content={content} setContent={setContent} />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[1, 2, 3, 4, 5, 6].map((n) => {
-                const urlKey = `about_permit_${n}_url`
-                const uploading_ = pdfUploading[urlKey]
-                return (
-                  <div key={n} className="border border-border rounded-xl p-4 space-y-3">
-                    <h3 className="font-heading font-semibold text-sm text-primary">Dokumen {n}</h3>
-                    <div className="border-t border-border pt-3 space-y-3">
-                      <FieldInput field={{ key: `about_permit_${n}_title`, label: 'Judul Dokumen' }} content={content} setContent={setContent} />
-                      <div className="space-y-1.5">
-                        <Label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">File PDF</Label>
-                        {content[urlKey] ? (
-                          <div className="flex items-center gap-3">
-                            <a href={content[urlKey]} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-muted/30 hover:bg-muted transition-colors text-sm">
-                              <FileText className="h-4 w-4 text-destructive" />
-                              <span className="text-foreground truncate max-w-[200px]">{content[`about_permit_${n}_title`] || `Dokumen ${n}`}</span>
-                            </a>
-                            <button
-                              type="button"
-                              onClick={() => pdfInputRefs.current[urlKey]?.click()}
-                              className="w-7 h-7 rounded-full bg-white border border-border flex items-center justify-center hover:bg-muted transition-colors"
-                              title="Ganti PDF"
-                            >
-                              <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setContent((prev) => ({ ...prev, [urlKey]: '' }))}
-                              className="w-7 h-7 rounded-full bg-red-500/90 text-white flex items-center justify-center hover:bg-red-500 transition-colors"
-                              title="Hapus PDF"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        ) : (
-                          <div
-                            className="flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-border cursor-pointer hover:border-primary/40 transition-colors"
-                            onClick={() => pdfInputRefs.current[urlKey]?.click()}
-                          >
-                            {uploading_ ? (
-                              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                            ) : (
-                              <>
-                                <FileText className="h-5 w-5 text-muted-foreground" />
-                                <span className="text-sm text-muted-foreground">Upload PDF</span>
-                              </>
-                            )}
-                          </div>
-                        )}
-                        <input
-                          ref={(el) => { pdfInputRefs.current[urlKey] = el }}
-                          type="file" accept="application/pdf" className="hidden"
-                          onChange={(e) => {
-                            const f = e.target.files?.[0]
-                            if (f) handlePdfUpload(urlKey, f)
-                            e.target.value = ''
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+            <h2 className="font-heading text-lg font-bold mb-4 pb-3 border-b border-border">Legal & Achievement</h2>
+            <p className="text-sm text-muted-foreground">
+              Kelola legal dan sertifikat penghargaan di halaman <a href="/admin/legal-achievements" className="text-primary hover:underline font-medium">Legal & Achievement</a>.
+            </p>
           </div>
         </div>
 
