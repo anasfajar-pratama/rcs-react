@@ -30,6 +30,7 @@ import AdminAbout from './pages/admin/About'
 import AdminActivityLogs from './pages/admin/ActivityLogs'
 import AdminAdmins from './pages/admin/Admins'
 import AdminRoles from './pages/admin/Roles'
+import AdminHeroes from './pages/admin/Heroes'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false } },
@@ -47,19 +48,28 @@ function PublicLayout({ children }: { children: React.ReactNode }) {
 
 function requireAdmin(Component: React.ComponentType) {
   return function ProtectedRoute() {
+    const [ready, setReady] = useState(false)
     const token = localStorage.getItem('admin_token')
-    if (!token) {
-      window.location.href = '/admin/login'
-      return null
-    }
-    const perms = localStorage.getItem('admin_permissions')
-    if (!perms || perms === '[]' || perms === 'null') {
+
+    useEffect(() => {
+      if (!token) {
+        window.location.href = '/admin/login'
+        return
+      }
+
+      const refreshed = sessionStorage.getItem('admin_permissions_refreshed')
+      if (refreshed) {
+        setReady(true)
+        return
+      }
+
       import('./lib/api').then(({ default: api }) => {
         api.get('/admin/me').then((res) => {
           if (res.data?.permissions) {
             localStorage.setItem('admin_permissions', JSON.stringify(res.data.permissions))
-            window.location.reload()
           }
+          sessionStorage.setItem('admin_permissions_refreshed', '1')
+          setReady(true)
         }).catch(() => {
           localStorage.removeItem('admin_token')
           localStorage.removeItem('admin_username')
@@ -67,7 +77,9 @@ function requireAdmin(Component: React.ComponentType) {
           window.location.href = '/admin/login'
         })
       })
-    }
+    }, [token])
+
+    if (!token || !ready) return null
     return <Component />
   }
 }
@@ -106,6 +118,7 @@ export default function App() {
             <Route path="/admin/activity-logs" component={requireAdmin(AdminActivityLogs)} />
             <Route path="/admin/admins" component={requireAdmin(AdminAdmins)} />
             <Route path="/admin/roles" component={requireAdmin(AdminRoles)} />
+            <Route path="/admin/heroes" component={requireAdmin(AdminHeroes)} />
             <Route path="/">
               <PublicLayout><Home /></PublicLayout>
             </Route>

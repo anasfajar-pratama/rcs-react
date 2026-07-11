@@ -4,7 +4,8 @@ import { Link, useLocation } from 'wouter'
 import {
   LayoutDashboard, Package, Home, MessageSquare, Image,
   LogOut, Menu, ExternalLink, User, Layers, Settings,
-  ClipboardList, Shield, Users, Palette, Info, ChevronDown
+  ClipboardList, Shield, Users, Palette, Info, ChevronDown,
+  SlidersHorizontal
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useAdminPermission } from '../../hooks/use-admin-permission'
@@ -32,6 +33,7 @@ const sidebarGroups: SidebarGroup[] = [
   ]},
   { label: 'Kelola Konten Umum', items: [
     { href: '/admin/homepage', label: 'Homepage', icon: Home, permission: 'view_homepage' },
+    { href: '/admin/heroes', label: 'Hero', icon: SlidersHorizontal, permission: 'view_heroes' },
     { href: '/admin/testimonials', label: 'Testimoni', icon: MessageSquare, permission: 'view_testimonials' },
     { href: '/admin/gallery', label: 'Galeri', icon: Image, permission: 'view_gallery' },
     { href: '/admin/brands', label: 'Brand', icon: Palette, permission: 'view_brands' },
