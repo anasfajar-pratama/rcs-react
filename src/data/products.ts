@@ -24,6 +24,8 @@ export interface Product {
   howToUse?: string[]
   images: ProductImage[]
   imageUrl?: string | null
+  beforeImage?: string | null
+  afterImage?: string | null
   sortOrder?: number
   isPromo?: boolean
   isNew?: boolean
@@ -38,6 +40,9 @@ export interface Product {
   originalPrice?: number
   rating?: number
   soldCount?: number
+  shopeeUrl?: string
+  tokopediaUrl?: string
+  tiktokUrl?: string
 }
 
 export interface Testimonial {
@@ -86,6 +91,10 @@ export const fallbackProducts: Product[] = [
     halalCertified: true,
     warrantyInfo: 'Gunakan dalam 6 bulan setelah dibuka',
     price: 149000,
+    originalPrice: 199000,
+    shopeeUrl: 'https://shopee.co.id/bright-glow-serum',
+    tokopediaUrl: 'https://tokopedia.com/bright-glow-serum',
+    tiktokUrl: 'https://tiktok.com/@rindangcemarasukses',
   },
   {
     id: 2,
@@ -107,6 +116,10 @@ export const fallbackProducts: Product[] = [
     soldCount: 890,
     weight: '50ml',
     price: 179000,
+    originalPrice: 229000,
+    shopeeUrl: 'https://shopee.co.id/hydra-glow-moisturizer',
+    tokopediaUrl: 'https://tokopedia.com/hydra-glow-moisturizer',
+    tiktokUrl: 'https://tiktok.com/@rindangcemarasukses',
   },
   {
     id: 3,
@@ -137,7 +150,12 @@ export const fallbackProducts: Product[] = [
     imageUrl: null,
     sortOrder: 4,
     isNew: true,
+    isFeatured: true,
     price: 99000,
+    originalPrice: 149000,
+    shopeeUrl: 'https://shopee.co.id/mens-active-cleanser',
+    tokopediaUrl: 'https://tokopedia.com/mens-active-cleanser',
+    tiktokUrl: 'https://tiktok.com/@rindangcemarasukses',
   },
   {
     id: 5,
@@ -239,7 +257,7 @@ export const fallbackHomepageContent: Record<string, string> = {
   newsletter_subtitle: 'Berlangganan untuk info produk baru dan penawaran eksklusif.',
 }
 
-export function formatPrice(price?: number): string {
-  if (!price) return ''
+export function formatPrice(price?: number | null): string {
+  if (price == null) return ''
   return 'Rp ' + price.toLocaleString('id-ID')
 }

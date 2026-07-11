@@ -7,5 +7,5 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatPrice(price?: number): string {
   if (!price) return ''
-  return 'Rp ' + price.toLocaleString('id-ID')
+  return 'Rp' + Math.round(price).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 }

@@ -115,6 +115,18 @@ export default function AdminSettings() {
       )
     }
 
+    if (setting.key === 'whatsapp_phone') {
+      return (
+        <Input
+          value={edited[setting.key] ?? ''}
+          onChange={(e) => setEdited((prev) => ({ ...prev, [setting.key]: e.target.value }))}
+          placeholder="6281234567890"
+          pattern="62\d{7,15}"
+          title="Harus diawali 62 (tanpa +), hanya angka. Contoh: 6281234567890"
+        />
+      )
+    }
+
     return (
       <Input value={edited[setting.key] ?? ''} onChange={(e) => setEdited((prev) => ({ ...prev, [setting.key]: e.target.value }))} />
     )

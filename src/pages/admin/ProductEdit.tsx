@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRoute, useLocation } from 'wouter'
-import { ArrowLeft, Save, Upload, Trash2, Star, ImagePlus, X, Eye, Loader2 } from 'lucide-react'
+import { ArrowLeft, Save, Upload, Trash2, Star, ImagePlus, X, Eye, Loader2, RefreshCw } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
@@ -31,12 +31,18 @@ export default function AdminProductEdit() {
   const [saving, setSaving] = useState(false)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [cropFile, setCropFile] = useState<File | null>(null)
+  const [beforeUploading, setBeforeUploading] = useState(false)
+  const [afterUploading, setAfterUploading] = useState(false)
+  const beforeInputRef = useRef<HTMLInputElement>(null)
+  const afterInputRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState({
     name: '', category: 'Wanita' as string, subcategoryId: '', tagline: '', description: '',
     ingredients: '', benefits: ['', '', '', ''], howToUse: ['', '', '', ''],
     isNew: false, isPromo: false, isFeatured: false, sortOrder: 0,
-    price: '', weight: '', dimensions: '', bpomNumber: '',
+    price: '', originalPrice: '', weight: '', dimensions: '', bpomNumber: '',
     certifications: ['', '', ''], halalCertified: false, warrantyInfo: '',
+    shopeeUrl: '', tokopediaUrl: '', tiktokUrl: '',
+    beforeImage: '', afterImage: '',
   })
 
   useEffect(() => {
@@ -58,10 +64,13 @@ export default function AdminProductEdit() {
         isNew: p.isNew || false, isPromo: p.isPromo || false, isFeatured: p.isFeatured || false,
         sortOrder: p.sortOrder || 0,
         price: String(p.price || ''),
+        originalPrice: String(p.originalPrice || ''),
         weight: p.weight || '', dimensions: p.dimensions || '',
         bpomNumber: p.bpomNumber || '',
         certifications: p.certifications?.length ? [...p.certifications, ...Array(3 - p.certifications.length).fill('')].slice(0, 3) : ['', '', ''],
         halalCertified: p.halalCertified || false, warrantyInfo: p.warrantyInfo || '',
+        shopeeUrl: p.shopeeUrl || '', tokopediaUrl: p.tokopediaUrl || '', tiktokUrl: p.tiktokUrl || '',
+        beforeImage: p.beforeImage || '', afterImage: p.afterImage || '',
       })
       setImages(p.images || [])
     }).catch(() => {
@@ -75,34 +84,57 @@ export default function AdminProductEdit() {
     const payload = {
       name: form.name,
       category: form.category,
-      subcategory_id: form.subcategoryId ? Number(form.subcategoryId) : undefined,
+      subcategory_id: form.subcategoryId ? Number(form.subcategoryId) : null,
       tagline: form.tagline,
-      description: form.description || undefined,
-      ingredients: form.ingredients || undefined,
+      description: form.description || null,
+      ingredients: form.ingredients || null,
       benefits: form.benefits.filter(Boolean),
       howToUse: form.howToUse.filter(Boolean),
       isNew: form.isNew,
       isPromo: form.isPromo,
       isFeatured: form.isFeatured,
-      sortOrder: form.sortOrder || undefined,
+      sortOrder: form.sortOrder || null,
       price: form.price ? Number(form.price) : null,
-      weight: form.weight || undefined,
-      dimensions: form.dimensions || undefined,
-      bpomNumber: form.bpomNumber || undefined,
+      originalPrice: form.originalPrice ? Number(form.originalPrice) : null,
+      shopeeUrl: form.shopeeUrl || null,
+      tokopediaUrl: form.tokopediaUrl || null,
+      tiktokUrl: form.tiktokUrl || null,
+      weight: form.weight || null,
+      dimensions: form.dimensions || null,
+      bpomNumber: form.bpomNumber || null,
       certifications: form.certifications.filter(Boolean),
       halalCertified: form.halalCertified,
-      warrantyInfo: form.warrantyInfo || undefined,
+      warrantyInfo: form.warrantyInfo || null,
+      beforeImage: form.beforeImage || null,
+      afterImage: form.afterImage || null,
     }
 
     try {
-      let productId: number
       if (isEdit && params?.id) {
-        await api.put(`/admin/products/${params.id}`, payload)
-        productId = Number(params.id)
+        const res = await api.put(`/admin/products/${params.id}`, payload)
+        const p: Product = res.data
+        setForm({
+          name: p.name, category: p.category, subcategoryId: String(p.subcategory?.id || ''),
+          tagline: p.tagline, description: p.description || '',
+          ingredients: p.ingredients || '',
+          benefits: p.benefits?.length ? [...p.benefits, ...Array(4 - p.benefits.length).fill('')].slice(0, 4) : ['', '', '', ''],
+          howToUse: p.howToUse?.length ? [...p.howToUse, ...Array(4 - p.howToUse.length).fill('')].slice(0, 4) : ['', '', '', ''],
+          isNew: p.isNew || false, isPromo: p.isPromo || false, isFeatured: p.isFeatured || false,
+          sortOrder: p.sortOrder || 0,
+          price: String(p.price || ''),
+          originalPrice: String(p.originalPrice || ''),
+          weight: p.weight || '', dimensions: p.dimensions || '',
+          bpomNumber: p.bpomNumber || '',
+          certifications: p.certifications?.length ? [...p.certifications, ...Array(3 - p.certifications.length).fill('')].slice(0, 3) : ['', '', ''],
+          halalCertified: p.halalCertified || false, warrantyInfo: p.warrantyInfo || '',
+          shopeeUrl: p.shopeeUrl || '', tokopediaUrl: p.tokopediaUrl || '', tiktokUrl: p.tiktokUrl || '',
+          beforeImage: p.beforeImage || '', afterImage: p.afterImage || '',
+        })
+        setImages(p.images || [])
         toast.success('Produk berhasil diperbarui')
       } else {
         const res = await api.post('/admin/products', payload)
-        productId = res.data.id
+        const productId = res.data.id
         const qrUrl = `${window.location.origin}/product/${productId}`
         await api.patch(`/admin/products/${productId}/qr`, { qrUrl })
         toast.success('Produk berhasil ditambahkan')
@@ -184,6 +216,31 @@ export default function AdminProductEdit() {
     }
   }
 
+  const handleBeforeAfterUpload = async (file: File, type: 'before' | 'after') => {
+    const setUploadingState = type === 'before' ? setBeforeUploading : setAfterUploading
+    const setValue = (url: string) => setForm((prev) => ({ ...prev, [type === 'before' ? 'beforeImage' : 'afterImage']: url }))
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Ukuran file maksimal 5MB')
+      return
+    }
+    setUploadingState(true)
+    try {
+      const { compressImage } = await import('../../lib/compress-image')
+      const compressed = await compressImage(file)
+      const fd = new FormData()
+      fd.append('image', compressed)
+      const { data } = await api.post('/admin/upload', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      setValue(data.imageUrl)
+      toast.success(`Gambar ${type === 'before' ? 'Before' : 'After'} berhasil diupload`)
+    } catch {
+      toast.error('Gagal upload gambar')
+    } finally {
+      setUploadingState(false)
+    }
+  }
+
   const subcategoriesForCategory = subcategories.filter((s) => s.category === form.category)
 
   return (
@@ -241,8 +298,12 @@ export default function AdminProductEdit() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Harga (Rp)</Label>
+                  <Label>Harga Jual (Rp)</Label>
                   <Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Harga Asli (coret) (Rp)</Label>
+                  <Input type="number" value={form.originalPrice} onChange={(e) => setForm({ ...form, originalPrice: e.target.value })} />
                 </div>
               </div>
               <div className="space-y-2">
@@ -317,6 +378,24 @@ export default function AdminProductEdit() {
                 </label>
               </div>
             </div>
+
+            <div className="p-6 rounded-2xl bg-white border border-border space-y-4">
+              <h2 className="font-heading font-semibold">Marketplace</h2>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label>Link Shopee</Label>
+                  <Input value={form.shopeeUrl} onChange={(e) => setForm({ ...form, shopeeUrl: e.target.value })} placeholder="https://shopee.co.id/..." />
+                </div>
+                <div className="space-y-2">
+                  <Label>Link Tokopedia</Label>
+                  <Input value={form.tokopediaUrl} onChange={(e) => setForm({ ...form, tokopediaUrl: e.target.value })} placeholder="https://tokopedia.com/..." />
+                </div>
+                <div className="space-y-2">
+                  <Label>Link TikTok</Label>
+                  <Input value={form.tiktokUrl} onChange={(e) => setForm({ ...form, tiktokUrl: e.target.value })} placeholder="https://tiktok.com/@..." />
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Sidebar */}
@@ -361,6 +440,111 @@ export default function AdminProductEdit() {
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">Simpan produk terlebih dahulu untuk menambahkan gambar.</p>
+              )}
+            </div>
+
+            {/* Before & After Images */}
+            <div className="p-6 rounded-2xl bg-white border border-border space-y-4">
+              <h2 className="font-heading font-semibold">Before & After</h2>
+              {isEdit ? (
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Before */}
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Before</p>
+                    {form.beforeImage ? (
+                      <div className="relative group aspect-square rounded-xl overflow-hidden border border-border bg-gradient-to-br from-primary/5 to-accent/5">
+                        <img src={form.beforeImage} alt="Before" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                          <button
+                            onClick={() => { if (beforeInputRef.current) beforeInputRef.current.click() }}
+                            className="w-8 h-8 rounded-full bg-white/90 flex items-center justify-center hover:bg-white"
+                          >
+                            <RefreshCw className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => setForm((prev) => ({ ...prev, beforeImage: '' }))}
+                            className="w-8 h-8 rounded-full bg-red-500/90 text-white flex items-center justify-center hover:bg-red-500"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        className="aspect-square rounded-xl border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary transition-colors"
+                        onClick={() => beforeInputRef.current?.click()}
+                      >
+                        {beforeUploading ? (
+                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        ) : (
+                          <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                            <ImagePlus className="h-6 w-6" />
+                            <span className="text-xs">Upload</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <input
+                      ref={beforeInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0]
+                        if (f) handleBeforeAfterUpload(f, 'before')
+                      }}
+                    />
+                  </div>
+                  {/* After */}
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2">After</p>
+                    {form.afterImage ? (
+                      <div className="relative group aspect-square rounded-xl overflow-hidden border border-border bg-gradient-to-br from-primary/5 to-accent/5">
+                        <img src={form.afterImage} alt="After" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                          <button
+                            onClick={() => { if (afterInputRef.current) afterInputRef.current.click() }}
+                            className="w-8 h-8 rounded-full bg-white/90 flex items-center justify-center hover:bg-white"
+                          >
+                            <RefreshCw className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => setForm((prev) => ({ ...prev, afterImage: '' }))}
+                            className="w-8 h-8 rounded-full bg-red-500/90 text-white flex items-center justify-center hover:bg-red-500"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        className="aspect-square rounded-xl border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary transition-colors"
+                        onClick={() => afterInputRef.current?.click()}
+                      >
+                        {afterUploading ? (
+                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        ) : (
+                          <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                            <ImagePlus className="h-6 w-6" />
+                            <span className="text-xs">Upload</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <input
+                      ref={afterInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0]
+                        if (f) handleBeforeAfterUpload(f, 'after')
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Simpan produk terlebih dahulu untuk menambahkan gambar Before & After.</p>
               )}
             </div>
 
