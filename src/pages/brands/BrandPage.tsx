@@ -7,7 +7,7 @@ import { ProductQuickView } from '../../components/features/ProductQuickView'
 import { useSiteSettings } from '../../hooks/use-site-settings'
 import { getBrandBySlug } from '../../data/brands'
 import api from '../../lib/api'
-import { fallbackProducts, type Product } from '../../data/products'
+import { fallbackProducts, type Product, type Subcategory } from '../../data/products'
 
 const iconMap: Record<string, typeof Sparkles> = {
   Sparkles, Heart, Shield, Zap, Wind, Briefcase, Leaf, Smile,
@@ -21,6 +21,8 @@ export default function BrandPage({ slug }: BrandPageProps) {
   const brand = getBrandBySlug(slug)
   const { settings } = useSiteSettings()
   const [products, setProducts] = useState<Product[]>(fallbackProducts)
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([])
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null)
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null)
 
   const logoStyle = brand ? settings[`logo_style_${brand.key}`] || 'rounded' : 'rounded'
@@ -31,6 +33,13 @@ export default function BrandPage({ slug }: BrandPageProps) {
     api.get(`/products?category=${brand.category}`).then((res) => {
       if (res.data?.length) setProducts(res.data)
     }).catch(() => {})
+    api.get(`/subcategories?category=${brand.category}`).then((res) => {
+      if (res.data?.length) setSubcategories(res.data)
+    }).catch(() => {})
+  }, [brand?.category])
+
+  useEffect(() => {
+    setSelectedSubcategory(null)
   }, [brand?.category])
 
   if (!brand) return null
@@ -98,14 +107,13 @@ export default function BrandPage({ slug }: BrandPageProps) {
               >
                 {tagline}
               </motion.p>
-              <motion.p
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.45 }}
-                className="text-muted-foreground leading-relaxed max-w-lg"
-              >
-                {description}
-              </motion.p>
+                className="text-muted-foreground leading-relaxed max-w-lg text-justify [&_p]:mb-2 [&_strong]:font-semibold [&_em]:italic [&_u]:underline"
+                dangerouslySetInnerHTML={{ __html: description }}
+              />
             </div>
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
@@ -155,11 +163,10 @@ export default function BrandPage({ slug }: BrandPageProps) {
               >
                 Tentang {brandName}
               </h2>
-              <div className="space-y-4 text-muted-foreground leading-relaxed">
-                {about.split('. ').map((paragraph, i) => (
-                  <p key={i}>{paragraph}.</p>
-                ))}
-              </div>
+              <div
+                className="text-muted-foreground leading-relaxed text-justify [&_p]:mb-3 [&_strong]:font-semibold [&_em]:italic [&_u]:underline"
+                dangerouslySetInnerHTML={{ __html: about }}
+              />
             </motion.div>
             <motion.div
               initial={{ opacity: 0, x: 20 }}
@@ -208,12 +215,60 @@ export default function BrandPage({ slug }: BrandPageProps) {
                 Koleksi {brandName}
               </h2>
               <p className="text-muted-foreground">
-                {products.length} produk tersedia
+                {products.filter((p) => !selectedSubcategory || p.subcategory?.slug === selectedSubcategory).length} produk tersedia
               </p>
             </div>
           </motion.div>
+
+          {(() => {
+            const activeSubcategories = subcategories.filter(
+              (sc) => products.some((p) => p.subcategory?.id === sc.id)
+            )
+            if (activeSubcategories.length === 0) return null
+            return (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-wrap gap-2 mb-8"
+              >
+                <button
+                  onClick={() => setSelectedSubcategory(null)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${
+                    !selectedSubcategory
+                      ? 'text-white border-transparent shadow-sm'
+                      : 'text-muted-foreground border-border hover:text-foreground hover:border-foreground/20'
+                  }`}
+                  style={!selectedSubcategory ? { background: brand.color, borderColor: brand.color } : {}}
+                >
+                  Semua
+                </button>
+                {activeSubcategories.map((sc) => {
+                  const count = products.filter((p) => p.subcategory?.id === sc.id).length
+                  const isActive = selectedSubcategory === sc.slug
+                  return (
+                    <button
+                      key={sc.id}
+                      onClick={() => setSelectedSubcategory(isActive ? null : sc.slug)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all border ${
+                        isActive
+                          ? 'text-white border-transparent shadow-sm'
+                          : 'text-muted-foreground border-border hover:text-foreground hover:border-foreground/20'
+                      }`}
+                      style={isActive ? { background: brand.color, borderColor: brand.color } : {}}
+                    >
+                      {sc.name}
+                      <span className="ml-1.5 text-xs opacity-70">({count})</span>
+                    </button>
+                  )
+                })}
+              </motion.div>
+            )
+          })()}
+
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            {products.map((product, i) => (
+            {products
+              .filter((p) => !selectedSubcategory || p.subcategory?.slug === selectedSubcategory)
+              .map((product, i) => (
               <motion.div
                 key={product.id}
                 initial={{ opacity: 0, y: 20 }}

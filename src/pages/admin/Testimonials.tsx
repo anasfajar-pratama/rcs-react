@@ -9,7 +9,7 @@ import { Switch } from '../../components/ui/switch'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../components/ui/alert-dialog'
 import { Badge } from '../../components/ui/badge'
-import { AdminLayout } from './AdminLayout'
+import { AdminLayout, AdminLoader } from './AdminLayout'
 import api from '../../lib/api'
 import { toast } from 'sonner'
 
@@ -102,7 +102,7 @@ export default function AdminTestimonials() {
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-muted-foreground">Memuat...</div>
+          <AdminLoader />
         ) : testimonials.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground mb-4">Belum ada testimoni</p>

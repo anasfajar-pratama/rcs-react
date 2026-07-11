@@ -37,7 +37,7 @@ export function BeforeAfterSlider({
 
   return (
     <div className="space-y-3">
-      <h4 className="font-heading font-semibold text-sm">Before / After</h4>
+      {/* <h4 className="font-heading font-semibold text-sm">Before / After</h4> */}
       <div
         ref={containerRef}
         className="relative w-full aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-primary/10 to-accent/10 cursor-ew-resize select-none"

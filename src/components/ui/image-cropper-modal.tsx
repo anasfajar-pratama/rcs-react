@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import Cropper, { type Area } from 'react-easy-crop'
 import { Button } from './button'
 import { toast } from 'sonner'
@@ -18,6 +18,7 @@ export function ImageCropperModal({ file, cropShape, aspectRatio = 1, onCrop, on
   const [processing, setProcessing] = useState(false)
   const [freeAspect, setFreeAspect] = useState(false)
   const imageUrl = URL.createObjectURL(file)
+  const processingRef = useRef(false)
 
   const locked = cropShape === 'round'
 
@@ -30,8 +31,11 @@ export function ImageCropperModal({ file, cropShape, aspectRatio = 1, onCrop, on
   }, [])
 
   const handleApply = async () => {
-    if (!croppedAreaPixels) return
+    if (!croppedAreaPixels || processingRef.current) return
+    processingRef.current = true
     setProcessing(true)
+
+    let calledCrop = false
     try {
       const canvas = document.createElement('canvas')
       const image = new Image()
@@ -66,11 +70,13 @@ export function ImageCropperModal({ file, cropShape, aspectRatio = 1, onCrop, on
       if (!blob) throw new Error('Gagal memproses gambar')
 
       URL.revokeObjectURL(imageUrl)
+      calledCrop = true
       onCrop(blob)
     } catch (err: any) {
       toast.error(err?.message || 'Gagal memproses gambar')
     } finally {
       setProcessing(false)
+      if (!calledCrop) processingRef.current = false
     }
   }
 

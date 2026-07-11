@@ -1,13 +1,16 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRoute, useLocation } from 'wouter'
-import { ArrowLeft, Save, Upload, Trash2, Star, ImagePlus, X, Eye, Loader2, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Save, Upload, Trash2, Star, ImagePlus, X, Eye, Loader2, RefreshCw, Download } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
 import { ImageCropperModal } from '../../components/ui/image-cropper-modal'
-import { AdminLayout } from './AdminLayout'
+import { RichEditor } from '../../components/ui/rich-editor'
+import { QRCodeSVG } from 'qrcode.react'
+import { AdminLayout, AdminLoader } from './AdminLayout'
+import { useSiteSettings } from '../../hooks/use-site-settings'
 import api from '../../lib/api'
 import { toast } from 'sonner'
 import { fallbackSubcategories, type Product, type Subcategory, type ProductImage } from '../../data/products'
@@ -25,10 +28,13 @@ export default function AdminProductEdit() {
   const [, navigate] = useLocation()
   const isEdit = params?.id && params.id !== 'new'
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { settings } = useSiteSettings()
   const [subcategories, setSubcategories] = useState<Subcategory[]>([])
   const [images, setImages] = useState<ProductImage[]>([])
   const [uploading, setUploading] = useState(false)
+  const [deletingImageId, setDeletingImageId] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
+  const [pageLoading, setPageLoading] = useState(true)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [cropFile, setCropFile] = useState<File | null>(null)
   const [beforeUploading, setBeforeUploading] = useState(false)
@@ -42,8 +48,19 @@ export default function AdminProductEdit() {
     price: '', originalPrice: '', weight: '', dimensions: '', bpomNumber: '',
     certifications: ['', '', ''], halalCertified: false, warrantyInfo: '',
     shopeeUrl: '', tokopediaUrl: '', tiktokUrl: '',
-    beforeImage: '', afterImage: '',
+    beforeImage: '', afterImage: '', showBeforeAfter: false,
   })
+
+  const formatNumber = (val: string): string => {
+    if (!val) return ''
+    const num = val.replace(/[^\d]/g, '')
+    return Number(num).toLocaleString('id-ID')
+  }
+
+  const handleNumberChange = (value: string, field: 'price' | 'originalPrice') => {
+    const raw = value.replace(/[^\d]/g, '')
+    setForm(prev => ({ ...prev, [field]: raw }))
+  }
 
   useEffect(() => {
     api.get('/subcategories').then((res) => {
@@ -52,7 +69,8 @@ export default function AdminProductEdit() {
   }, [])
 
   useEffect(() => {
-    if (!isEdit || !params?.id) return
+    if (!isEdit || !params?.id) { setPageLoading(false); return }
+    setPageLoading(true)
     api.get(`/admin/products/${params.id}`).then((res) => {
       const p: Product = res.data
       setForm({
@@ -63,20 +81,21 @@ export default function AdminProductEdit() {
         howToUse: p.howToUse?.length ? [...p.howToUse, ...Array(4 - p.howToUse.length).fill('')].slice(0, 4) : ['', '', '', ''],
         isNew: p.isNew || false, isPromo: p.isPromo || false, isFeatured: p.isFeatured || false,
         sortOrder: p.sortOrder || 0,
-        price: String(p.price || ''),
-        originalPrice: String(p.originalPrice || ''),
+        price: p.price ? String(Math.round(Number(p.price))) : '',
+        originalPrice: p.originalPrice ? String(Math.round(Number(p.originalPrice))) : '',
         weight: p.weight || '', dimensions: p.dimensions || '',
         bpomNumber: p.bpomNumber || '',
         certifications: p.certifications?.length ? [...p.certifications, ...Array(3 - p.certifications.length).fill('')].slice(0, 3) : ['', '', ''],
         halalCertified: p.halalCertified || false, warrantyInfo: p.warrantyInfo || '',
         shopeeUrl: p.shopeeUrl || '', tokopediaUrl: p.tokopediaUrl || '', tiktokUrl: p.tiktokUrl || '',
         beforeImage: p.beforeImage || '', afterImage: p.afterImage || '',
+        showBeforeAfter: p.showBeforeAfter || false,
       })
       setImages(p.images || [])
     }).catch(() => {
       toast.error('Gagal memuat produk')
       navigate('/admin/products')
-    })
+    }).finally(() => setPageLoading(false))
   }, [params?.id])
 
   const handleSave = async () => {
@@ -107,6 +126,7 @@ export default function AdminProductEdit() {
       warrantyInfo: form.warrantyInfo || null,
       beforeImage: form.beforeImage || null,
       afterImage: form.afterImage || null,
+      showBeforeAfter: form.showBeforeAfter,
     }
 
     try {
@@ -121,24 +141,22 @@ export default function AdminProductEdit() {
           howToUse: p.howToUse?.length ? [...p.howToUse, ...Array(4 - p.howToUse.length).fill('')].slice(0, 4) : ['', '', '', ''],
           isNew: p.isNew || false, isPromo: p.isPromo || false, isFeatured: p.isFeatured || false,
           sortOrder: p.sortOrder || 0,
-          price: String(p.price || ''),
-          originalPrice: String(p.originalPrice || ''),
+          price: p.price ? String(Math.round(Number(p.price))) : '',
+          originalPrice: p.originalPrice ? String(Math.round(Number(p.originalPrice))) : '',
           weight: p.weight || '', dimensions: p.dimensions || '',
           bpomNumber: p.bpomNumber || '',
           certifications: p.certifications?.length ? [...p.certifications, ...Array(3 - p.certifications.length).fill('')].slice(0, 3) : ['', '', ''],
           halalCertified: p.halalCertified || false, warrantyInfo: p.warrantyInfo || '',
           shopeeUrl: p.shopeeUrl || '', tokopediaUrl: p.tokopediaUrl || '', tiktokUrl: p.tiktokUrl || '',
           beforeImage: p.beforeImage || '', afterImage: p.afterImage || '',
+          showBeforeAfter: p.showBeforeAfter || false,
         })
         setImages(p.images || [])
         toast.success('Produk berhasil diperbarui')
       } else {
         const res = await api.post('/admin/products', payload)
-        const productId = res.data.id
-        const qrUrl = `${window.location.origin}/product/${productId}`
-        await api.patch(`/admin/products/${productId}/qr`, { qrUrl })
         toast.success('Produk berhasil ditambahkan')
-        navigate(`/admin/products/edit/${productId}`)
+        navigate(`/admin/products/edit/${res.data.id}`)
       }
     } catch {
       toast.error('Gagal menyimpan produk')
@@ -207,12 +225,15 @@ export default function AdminProductEdit() {
 
   const handleDeleteImage = async (imageId: number) => {
     if (!params?.id) return
+    setDeletingImageId(imageId)
     try {
       await api.delete(`/admin/products/${params.id}/images/${imageId}`)
       setImages((prev) => prev.filter((img) => img.id !== imageId))
       toast.success('Gambar dihapus')
     } catch {
       toast.error('Gagal menghapus gambar')
+    } finally {
+      setDeletingImageId(null)
     }
   }
 
@@ -241,11 +262,45 @@ export default function AdminProductEdit() {
     }
   }
 
+  const downloadQR = () => {
+    const svg = document.getElementById('product-qr')
+    if (!svg) return
+    const svgData = new XMLSerializer().serializeToString(svg)
+    const canvas = document.createElement('canvas')
+    const a5Width = 1748
+    const a5Height = 2480
+    canvas.width = a5Width
+    canvas.height = a5Height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    const img = new Image()
+    img.onload = () => {
+      const padding = a5Width * 0.12
+      const qrSize = a5Width - padding * 2
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, a5Width, a5Height)
+      ctx.drawImage(img, padding, (a5Height - qrSize) / 2, qrSize, qrSize)
+      const a = document.createElement('a')
+      a.download = `${form.name || 'product'}-qr.png`
+      a.href = canvas.toDataURL('image/png')
+      a.click()
+    }
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)))
+  }
+
   const subcategoriesForCategory = subcategories.filter((s) => s.category === form.category)
+
+  if (pageLoading) {
+    return (
+      <AdminLayout>
+        <AdminLoader />
+      </AdminLayout>
+    )
+  }
 
   return (
     <AdminLayout>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative">
         <div className="flex items-center gap-4 mb-6">
           <Button variant="ghost" size="icon" onClick={() => navigate('/admin/products')}>
             <ArrowLeft className="h-5 w-5" />
@@ -299,11 +354,11 @@ export default function AdminProductEdit() {
                 </div>
                 <div className="space-y-2">
                   <Label>Harga Jual (Rp)</Label>
-                  <Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+                  <Input value={formatNumber(form.price)} onChange={(e) => handleNumberChange(e.target.value, 'price')} placeholder="0" />
                 </div>
                 <div className="space-y-2">
                   <Label>Harga Asli (coret) (Rp)</Label>
-                  <Input type="number" value={form.originalPrice} onChange={(e) => setForm({ ...form, originalPrice: e.target.value })} />
+                  <Input value={formatNumber(form.originalPrice)} onChange={(e) => handleNumberChange(e.target.value, 'originalPrice')} placeholder="0" />
                 </div>
               </div>
               <div className="space-y-2">
@@ -312,11 +367,11 @@ export default function AdminProductEdit() {
               </div>
               <div className="space-y-2">
                 <Label>Deskripsi</Label>
-                <textarea className="flex w-full rounded-xl border border-border bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary resize-none" rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                <RichEditor value={form.description} onChange={(v) => setForm({ ...form, description: v })} placeholder="Tulis deskripsi produk..." />
               </div>
               <div className="space-y-2">
                 <Label>Bahan / Ingredients</Label>
-                <textarea className="flex w-full rounded-xl border border-border bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary resize-none" rows={3} value={form.ingredients} onChange={(e) => setForm({ ...form, ingredients: e.target.value })} />
+                <RichEditor value={form.ingredients} onChange={(v) => setForm({ ...form, ingredients: v })} placeholder="Tulis bahan-bahan produk..." />
               </div>
             </div>
 
@@ -408,6 +463,11 @@ export default function AdminProductEdit() {
                   <div className="grid grid-cols-2 gap-3">
                     {images.map((img) => (
                       <div key={img.id} className="relative group aspect-square rounded-xl overflow-hidden border border-border bg-gradient-to-br from-primary/5 to-accent/5">
+                        {deletingImageId === img.id && (
+                          <div className="absolute inset-0 z-10 bg-black/50 flex items-center justify-center rounded-xl">
+                            <Loader2 className="h-8 w-8 animate-spin text-white" />
+                          </div>
+                        )}
                         <img src={img.imageUrl} alt="" className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
                           <button onClick={() => setPreviewImage(img.imageUrl)} className="w-8 h-8 rounded-full bg-white/90 flex items-center justify-center hover:bg-white">
@@ -418,7 +478,7 @@ export default function AdminProductEdit() {
                               <Star className="h-4 w-4" />
                             </button>
                           )}
-                          <button onClick={() => handleDeleteImage(img.id)} className="w-8 h-8 rounded-full bg-red-500/90 text-white flex items-center justify-center hover:bg-red-500">
+                          <button onClick={() => handleDeleteImage(img.id)} disabled={deletingImageId !== null} className="w-8 h-8 rounded-full bg-red-500/90 text-white flex items-center justify-center hover:bg-red-500 disabled:opacity-50">
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
@@ -429,6 +489,14 @@ export default function AdminProductEdit() {
                         )}
                       </div>
                     ))}
+                    {uploading && (
+                      <div className="aspect-square rounded-xl border-2 border-dashed border-primary/50 bg-primary/5 flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-2">
+                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                          <span className="text-xs text-primary font-medium">Mengupload...</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
@@ -447,104 +515,131 @@ export default function AdminProductEdit() {
             <div className="p-6 rounded-2xl bg-white border border-border space-y-4">
               <h2 className="font-heading font-semibold">Before & After</h2>
               {isEdit ? (
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Before */}
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-2">Before</p>
-                    {form.beforeImage ? (
-                      <div className="relative group aspect-square rounded-xl overflow-hidden border border-border bg-gradient-to-br from-primary/5 to-accent/5">
-                        <img src={form.beforeImage} alt="Before" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-                          <button
-                            onClick={() => { if (beforeInputRef.current) beforeInputRef.current.click() }}
-                            className="w-8 h-8 rounded-full bg-white/90 flex items-center justify-center hover:bg-white"
-                          >
-                            <RefreshCw className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => setForm((prev) => ({ ...prev, beforeImage: '' }))}
-                            className="w-8 h-8 rounded-full bg-red-500/90 text-white flex items-center justify-center hover:bg-red-500"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div
-                        className="aspect-square rounded-xl border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary transition-colors"
-                        onClick={() => beforeInputRef.current?.click()}
-                      >
-                        {beforeUploading ? (
-                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                        ) : (
-                          <div className="flex flex-col items-center gap-1 text-muted-foreground">
-                            <ImagePlus className="h-6 w-6" />
-                            <span className="text-xs">Upload</span>
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Before */}
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Before</p>
+                      {form.beforeImage ? (
+                        <div className="relative group aspect-square rounded-xl overflow-hidden border border-border bg-gradient-to-br from-primary/5 to-accent/5">
+                          <img src={form.beforeImage} alt="Before" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                            <button
+                              onClick={() => { if (beforeInputRef.current) beforeInputRef.current.click() }}
+                              className="w-8 h-8 rounded-full bg-white/90 flex items-center justify-center hover:bg-white"
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => setForm((prev) => ({ ...prev, beforeImage: '' }))}
+                              className="w-8 h-8 rounded-full bg-red-500/90 text-white flex items-center justify-center hover:bg-red-500"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
                           </div>
-                        )}
-                      </div>
-                    )}
-                    <input
-                      ref={beforeInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0]
-                        if (f) handleBeforeAfterUpload(f, 'before')
-                      }}
-                    />
-                  </div>
-                  {/* After */}
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-2">After</p>
-                    {form.afterImage ? (
-                      <div className="relative group aspect-square rounded-xl overflow-hidden border border-border bg-gradient-to-br from-primary/5 to-accent/5">
-                        <img src={form.afterImage} alt="After" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
-                          <button
-                            onClick={() => { if (afterInputRef.current) afterInputRef.current.click() }}
-                            className="w-8 h-8 rounded-full bg-white/90 flex items-center justify-center hover:bg-white"
-                          >
-                            <RefreshCw className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => setForm((prev) => ({ ...prev, afterImage: '' }))}
-                            className="w-8 h-8 rounded-full bg-red-500/90 text-white flex items-center justify-center hover:bg-red-500"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
                         </div>
-                      </div>
-                    ) : (
-                      <div
-                        className="aspect-square rounded-xl border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary transition-colors"
-                        onClick={() => afterInputRef.current?.click()}
-                      >
-                        {afterUploading ? (
-                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                        ) : (
-                          <div className="flex flex-col items-center gap-1 text-muted-foreground">
-                            <ImagePlus className="h-6 w-6" />
-                            <span className="text-xs">Upload</span>
+                      ) : (
+                        <div
+                          className="aspect-square rounded-xl border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary transition-colors"
+                          onClick={() => beforeInputRef.current?.click()}
+                        >
+                          {beforeUploading ? (
+                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                          ) : (
+                            <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                              <ImagePlus className="h-6 w-6" />
+                              <span className="text-xs">Upload</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <input
+                        ref={beforeInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0]
+                          if (f) handleBeforeAfterUpload(f, 'before')
+                        }}
+                      />
+                    </div>
+                    {/* After */}
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-2">After</p>
+                      {form.afterImage ? (
+                        <div className="relative group aspect-square rounded-xl overflow-hidden border border-border bg-gradient-to-br from-primary/5 to-accent/5">
+                          <img src={form.afterImage} alt="After" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                            <button
+                              onClick={() => { if (afterInputRef.current) afterInputRef.current.click() }}
+                              className="w-8 h-8 rounded-full bg-white/90 flex items-center justify-center hover:bg-white"
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => setForm((prev) => ({ ...prev, afterImage: '' }))}
+                              className="w-8 h-8 rounded-full bg-red-500/90 text-white flex items-center justify-center hover:bg-red-500"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
                           </div>
-                        )}
-                      </div>
-                    )}
-                    <input
-                      ref={afterInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0]
-                        if (f) handleBeforeAfterUpload(f, 'after')
-                      }}
-                    />
+                        </div>
+                      ) : (
+                        <div
+                          className="aspect-square rounded-xl border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary transition-colors"
+                          onClick={() => afterInputRef.current?.click()}
+                        >
+                          {afterUploading ? (
+                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                          ) : (
+                            <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                              <ImagePlus className="h-6 w-6" />
+                              <span className="text-xs">Upload</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <input
+                        ref={afterInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0]
+                          if (f) handleBeforeAfterUpload(f, 'after')
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
+                  <label className="flex items-center gap-2 text-sm cursor-pointer pt-2">
+                    <input type="checkbox" checked={form.showBeforeAfter} onChange={(e) => setForm({ ...form, showBeforeAfter: e.target.checked })} className="rounded border-border" /> Tampilkan di halaman produk
+                  </label>
+                </>
               ) : (
                 <p className="text-sm text-muted-foreground">Simpan produk terlebih dahulu untuk menambahkan gambar Before & After.</p>
+              )}
+            </div>
+
+            {/* QR Code */}
+            <div className="p-6 rounded-2xl bg-white border border-border space-y-4">
+              <h2 className="font-heading font-semibold">QR Code Produk</h2>
+              {isEdit && params?.id ? (
+                <>
+                  <div className="flex justify-center">
+                    <QRCodeSVG
+                      id="product-qr"
+                      value={`${window.location.origin}/product/${params.id}`}
+                      size={160}
+                    />
+                  </div>
+                  <Button variant="outline" className="w-full gap-2" onClick={downloadQR}>
+                    <Download className="h-4 w-4" />
+                    Download PNG (A5)
+                  </Button>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">Simpan produk terlebih dahulu untuk melihat QR Code.</p>
               )}
             </div>
 
@@ -594,6 +689,41 @@ export default function AdminProductEdit() {
             onCrop={doUploadAfterCrop}
             onCancel={() => setCropFile(null)}
           />
+        )}
+
+        {saving && (
+          <div className="fixed inset-0 md:left-60 z-50 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center gap-4"
+            >
+              {settings.site_logo ? (
+                <motion.img
+                  src={settings.site_logo}
+                  alt="Logo"
+                  className="h-16 w-auto"
+                  animate={{ opacity: [1, 0.5, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                />
+              ) : (
+                <motion.div
+                  className="font-heading text-3xl font-bold tracking-tight"
+                  animate={{ opacity: [1, 0.5, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  <span>Rindang</span>
+                  <span className="text-primary"> Cemara Sukses</span>
+                </motion.div>
+              )}
+              <motion.div
+                className="w-8 h-1 rounded-full bg-primary"
+                animate={{ scaleX: [1, 0.3, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+              />
+              <p className="text-sm text-muted-foreground mt-2">Menyimpan...</p>
+            </motion.div>
+          </div>
         )}
       </motion.div>
     </AdminLayout>

@@ -221,12 +221,7 @@ export default function Home() {
                 {content.about_title || 'Inovasi untuk Kecantikan'}
               </h2>
               <div className="w-12 h-0.5 bg-primary/30 mb-8" />
-              <p className="text-muted-foreground leading-[1.9] text-[15px] sm:text-[16px] mb-6 text-balance">
-                {content.about_text1 || 'Rindang Cemara Sukses menghadirkan alat kecantikan berkualitas tinggi yang menggabungkan teknologi modern dengan desain elegan.'}
-              </p>
-              <p className="text-muted-foreground leading-[1.9] text-[15px] sm:text-[16px] mb-10 text-balance">
-                {content.about_text2 || 'Setiap produk dirancang dengan teliti menggunakan material terbaik untuk hasil maksimal.'}
-              </p>
+              <div className="text-muted-foreground leading-[1.9] text-[15px] sm:text-[16px] mb-10 text-justify [&_p]:mb-4" dangerouslySetInnerHTML={{ __html: content.about_text || 'Rindang Cemara Sukses menghadirkan alat kecantikan berkualitas tinggi yang menggabungkan teknologi modern dengan desain elegan.' }} />
               {content.about_quote && (
                 <blockquote className="relative pl-10 italic text-foreground/70 font-heading font-medium text-lg sm:text-xl leading-relaxed">
                   <span className="absolute left-0 top-1/2 -translate-y-1/2 w-6 h-px bg-primary/40" />

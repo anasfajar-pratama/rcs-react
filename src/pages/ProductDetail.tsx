@@ -5,25 +5,23 @@ import { motion } from 'framer-motion'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
 import { Separator } from '../components/ui/separator'
-import { Skeleton } from '../components/ui/skeleton'
 import { BeforeAfterSlider } from '../components/features/BeforeAfterSlider'
-import { TechSpecs } from '../components/features/TechSpecs'
-import { ComparisonTable } from '../components/features/ComparisonTable'
+import { PageLoader } from '../components/ui/page-loader'
 import { useWishlist } from '../hooks/use-wishlist'
 import { cn, formatPrice } from '../lib/utils'
 import api from '../lib/api'
 import { fallbackProducts, type Product } from '../data/products'
 import { getBrandByCategory } from '../data/brands'
+import { useSiteSettings } from '../hooks/use-site-settings'
 
 export default function ProductDetail() {
   const [, params] = useRoute('/product/:id')
   const [product, setProduct] = useState<Product | null>(null)
   const [activeImage, setActiveImage] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [compareMode, setCompareMode] = useState(false)
-  const [compareProducts, setCompareProducts] = useState<Product[]>([])
   const { isWishlisted, toggleItem } = useWishlist()
   const [whatsappPhone, setWhatsappPhone] = useState('')
+  const { settings } = useSiteSettings()
 
   useEffect(() => {
     api.get('/settings').then((res) => {
@@ -70,27 +68,8 @@ export default function ProductDetail() {
     return () => window.removeEventListener('keydown', handleKey)
   }, [allImages.length])
 
-  useEffect(() => {
-    if (product && !compareProducts.find((p) => p.id === product.id)) {
-      setCompareProducts((prev) => [...prev, product].slice(0, 3))
-    }
-  }, [product])
-
   if (loading) {
-    return (
-      <div className="pt-24 pb-16 max-w-7xl mx-auto px-4">
-        <Skeleton className="h-8 w-32 mb-8 rounded-xl" />
-        <div className="grid md:grid-cols-2 gap-8">
-          <Skeleton className="aspect-square rounded-2xl" />
-          <div className="space-y-4">
-            <Skeleton className="h-6 w-24 rounded-xl" />
-            <Skeleton className="h-10 w-3/4 rounded-xl" />
-            <Skeleton className="h-4 w-1/2 rounded-xl" />
-            <Skeleton className="h-32 w-full rounded-xl" />
-          </div>
-        </div>
-      </div>
-    )
+    return <PageLoader logo={settings.site_logo} />
   }
 
   if (!product) {
@@ -110,14 +89,6 @@ export default function ProductDetail() {
 
   const brandConfig = getBrandByCategory(product.category)
   const brandName = brandConfig?.name || product.category
-
-  const defaultSpecs = [
-    { label: 'Material', value: product.ingredients || 'Premium food-grade' },
-    { label: 'Berat', value: product.weight || '200g' },
-    { label: 'Dimensi', value: product.dimensions || '15 x 5 x 3 cm' },
-    { label: 'Garansi', value: product.warrantyInfo || '1 tahun' },
-    { label: 'BPOM', value: product.bpomNumber || 'Terdaftar' },
-  ]
 
   return (
     <div className="pt-24 pb-16 sm:pb-20">
@@ -244,6 +215,17 @@ export default function ProductDetail() {
                 </div>
               </>
             )}
+
+            {/* Before/After */}
+            {product.showBeforeAfter && (
+              <div className="mt-6 p-4 rounded-2xl border border-border bg-white">
+                <h3 className="font-heading font-semibold text-base mb-3 flex items-center gap-2">
+                  <span className="w-1.5 h-5 rounded-full bg-primary inline-block" />
+                  Sebelum & Sesudah
+                </h3>
+                <BeforeAfterSlider beforeImage={product.beforeImage || undefined} afterImage={product.afterImage || undefined} />
+              </div>
+            )}
           </motion.div>
 
           {/* Product Info */}
@@ -267,7 +249,7 @@ export default function ProductDetail() {
             <p className="text-muted-foreground mb-4">{product.tagline}</p>
 
             {product.price != null && (
-              <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center gap-3 mb-4">
                 <p className="text-2xl font-bold" style={{ color: brandConfig?.colorDark || 'var(--color-foreground)' }}>{formatPrice(product.price)}</p>
                 {product.originalPrice != null && product.originalPrice > product.price && (
                   <>
@@ -280,101 +262,10 @@ export default function ProductDetail() {
               </div>
             )}
 
-            {product.description && (
-              <div className="mb-6">
-                <p className="text-base text-foreground/80 leading-relaxed tracking-wide max-w-prose text-justify">{product.description}</p>
-              </div>
-            )}
-
-            {/* Benefits */}
-            {product.benefits && product.benefits.length > 0 && (
-              <div className="mb-6">
-                <h3 className="font-semibold text-sm mb-3">Manfaat:</h3>
-                <ul className="grid grid-cols-2 gap-2">
-                  {product.benefits.map((b, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Check className="h-4 w-4 shrink-0" style={{ color: brandConfig?.color || 'var(--color-primary)' }} />
-                      {b}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* How to Use */}
-            {product.howToUse && product.howToUse.length > 0 && (
-              <div className="mb-6">
-                <h3 className="font-semibold text-sm mb-3">Cara Pakai:</h3>
-                <ol className="space-y-2">
-                  {product.howToUse.map((step, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm text-muted-foreground text-justify">
-                      <span className="w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: `${brandConfig?.color || 'var(--color-primary)'}20`, color: brandConfig?.color || 'var(--color-primary)' }}>
-                        {i + 1}
-                      </span>
-                      {step}
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            )}
-
-            {/* Ingredients */}
-            {product.ingredients && (
-              <div className="mb-6">
-                <h3 className="font-semibold text-sm mb-2">Bahan:</h3>
-                <p className="text-base text-foreground/80 leading-relaxed tracking-wide text-justify">{product.ingredients}</p>
-              </div>
-            )}
-
-            <Separator className="mb-6" />
-
-            {/* Additional Info Grid */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              {product.weight && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Scale className="h-4 w-4 shrink-0" />
-                  <span>{product.weight}</span>
-                </div>
-              )}
-              {product.dimensions && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Ruler className="h-4 w-4 shrink-0" />
-                  <span>{product.dimensions}</span>
-                </div>
-              )}
-              {product.bpomNumber && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Barcode className="h-4 w-4 shrink-0" />
-                  <span>BPOM: {product.bpomNumber}</span>
-                </div>
-              )}
-              {product.warrantyInfo && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <FileText className="h-4 w-4 shrink-0" />
-                  <span>{product.warrantyInfo}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Certifications */}
-            {(product.certifications?.length || product.halalCertified) && (
-              <div className="flex flex-wrap gap-2 mb-6">
-                {product.certifications?.map((cert, i) => (
-                  <Badge key={i} variant="secondary" className="gap-1">
-                    <Award className="h-3 w-3" /> {cert}
-                  </Badge>
-                ))}
-                {product.halalCertified && (
-                  <Badge variant="secondary" className="gap-1">
-                    <BadgeCheck className="h-3 w-3" /> Halal
-                  </Badge>
-                )}
-              </div>
-            )}
-
+            {/* Beli di */}
             {(product.shopeeUrl || product.tokopediaUrl || product.tiktokUrl || whatsappPhone) && (
-              <div className="mb-6">
-                <h3 className="font-semibold text-sm mb-3">Beli di:</h3>
+              <div className="mb-4">
+                <h3 className="font-semibold text-sm mb-2">Beli di:</h3>
                 <div className="flex flex-wrap gap-2">
                   {product.shopeeUrl && (
                     <a href={product.shopeeUrl} target="_blank" rel="noopener noreferrer">
@@ -412,9 +303,9 @@ export default function ProductDetail() {
               </div>
             )}
 
-            <Separator className="mb-6" />
+            <Separator className="mb-4" />
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 mb-6">
               <Button
                 onClick={() => toggleItem(product.id)}
                 variant={wishlisted ? 'default' : 'outline'}
@@ -423,38 +314,102 @@ export default function ProductDetail() {
                 <Heart className={cn('h-4 w-4', wishlisted && 'fill-white')} />
                 {wishlisted ? 'Di Wishlist' : 'Tambah ke Wishlist'}
               </Button>
-              <Button
-                variant="secondary"
-                onClick={() => setCompareMode(!compareMode)}
-              >
-                {compareMode ? 'Tutup' : 'Bandingkan'}
-              </Button>
             </div>
+
+            {product.description && (
+              <div className="mb-6">
+                <div className="text-base text-foreground/80 leading-relaxed tracking-wide max-w-prose text-justify prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: product.description }} />
+              </div>
+            )}
+
+            {/* Benefits */}
+            {product.benefits && product.benefits.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-semibold text-sm mb-3">Manfaat:</h3>
+                <ul className="grid grid-cols-2 gap-2">
+                  {product.benefits.map((b, i) => (
+                    <li key={i} className="flex items-center gap-2 text-base text-foreground/80 leading-relaxed tracking-wide">
+                      <Check className="h-4 w-4 shrink-0" style={{ color: brandConfig?.color || 'var(--color-primary)' }} />
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* How to Use */}
+            {product.howToUse && product.howToUse.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-semibold text-sm mb-3">Cara Pakai:</h3>
+                <ol className="space-y-2">
+                  {product.howToUse.map((step, i) => (
+                    <li key={i} className="flex items-start gap-3 text-base text-foreground/80 leading-relaxed tracking-wide text-justify">
+                      <span className="w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center shrink-0 mt-0.5" style={{ backgroundColor: `${brandConfig?.color || 'var(--color-primary)'}20`, color: brandConfig?.color || 'var(--color-primary)' }}>
+                        {i + 1}
+                      </span>
+                      {step}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {/* Ingredients */}
+            {product.ingredients && (
+              <div className="mb-6">
+                <h3 className="font-semibold text-sm mb-2">Bahan:</h3>
+                <div className="text-base text-foreground/80 leading-relaxed tracking-wide text-justify prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: product.ingredients }} />
+              </div>
+            )}
+
+            <Separator className="mb-6" />
+
+            {/* Additional Info Grid */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              {product.weight && (
+                <div className="flex items-center gap-2 text-base text-foreground/80 leading-relaxed tracking-wide">
+                  <Scale className="h-4 w-4 shrink-0" />
+                  <span>{product.weight}</span>
+                </div>
+              )}
+              {product.dimensions && (
+                <div className="flex items-center gap-2 text-base text-foreground/80 leading-relaxed tracking-wide">
+                  <Ruler className="h-4 w-4 shrink-0" />
+                  <span>Dimensi: {product.dimensions}</span>
+                </div>
+              )}
+              {product.bpomNumber && (
+                <div className="flex items-center gap-2 text-base text-foreground/80 leading-relaxed tracking-wide">
+                  <Barcode className="h-4 w-4 shrink-0" />
+                  <span>BPOM: {product.bpomNumber}</span>
+                </div>
+              )}
+              {product.warrantyInfo && (
+                <div className="flex items-center gap-2 text-base text-foreground/80 leading-relaxed tracking-wide">
+                  <FileText className="h-4 w-4 shrink-0" />
+                  <span>Expired Date: {product.warrantyInfo}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Certifications */}
+            {(product.certifications?.length || product.halalCertified) && (
+              <div className="flex flex-wrap gap-2 mb-6">
+                {product.certifications?.map((cert, i) => (
+                  <Badge key={i} variant="secondary" className="gap-1">
+                    <Award className="h-3 w-3" /> {cert}
+                  </Badge>
+                ))}
+                {product.halalCertified && (
+                  <Badge variant="secondary" className="gap-1">
+                    <BadgeCheck className="h-3 w-3" /> Halal
+                  </Badge>
+                )}
+              </div>
+            )}
+
           </motion.div>
         </div>
-
-        {/* Before/After + Tech Specs */}
-        <div className="grid md:grid-cols-2 gap-8 mt-12">
-          <BeforeAfterSlider beforeImage={product.beforeImage || undefined} afterImage={product.afterImage || undefined} />
-          <TechSpecs specs={defaultSpecs} />
-        </div>
-
-        {/* Comparison Table */}
-        {compareMode && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-12"
-          >
-            <h2 className="font-heading text-xl font-bold mb-6">Perbandingan Produk</h2>
-            <div className="rounded-2xl border border-border bg-white overflow-hidden">
-              <ComparisonTable
-                products={compareProducts}
-                onRemove={(id) => setCompareProducts((prev) => prev.filter((p) => p.id !== id))}
-              />
-            </div>
-          </motion.div>
-        )}
       </div>
     </div>
   )

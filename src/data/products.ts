@@ -43,6 +43,7 @@ export interface Product {
   shopeeUrl?: string
   tokopediaUrl?: string
   tiktokUrl?: string
+  showBeforeAfter?: boolean
 }
 
 export interface Testimonial {

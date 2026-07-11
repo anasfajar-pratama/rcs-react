@@ -1,7 +1,10 @@
+import { useState, useEffect } from 'react'
 import { Route, Switch } from 'wouter'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { TooltipProvider } from './components/ui/tooltip'
 import { Toaster } from './components/ui/toaster'
+import { PageLoader } from './components/ui/page-loader'
+import { useSiteSettings } from './hooks/use-site-settings'
 import { Navbar } from './components/layout/Navbar'
 import { Footer } from './components/layout/Footer'
 import Home from './pages/Home'
@@ -70,6 +73,19 @@ function requireAdmin(Component: React.ComponentType) {
 }
 
 export default function App() {
+  const { settings } = useSiteSettings()
+  const [ready, setReady] = useState(() => !!sessionStorage.getItem('app_loaded'))
+
+  useEffect(() => {
+    sessionStorage.setItem('app_loaded', '1')
+    const timer = setTimeout(() => setReady(true), 600)
+    return () => clearTimeout(timer)
+  }, [])
+
+  if (!ready) {
+    return <PageLoader logo={settings.site_logo} />
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
