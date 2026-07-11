@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Edit3, Trash2, Star } from 'lucide-react'
+import { Plus, Edit3, Trash2, Star, Camera, X, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
@@ -18,7 +18,11 @@ interface Testimonial {
   name: string
   content: string
   rating: string
+  phone?: string
+  email?: string
+  avatarUrl?: string
   isActive: boolean
+  isAdminCreated?: boolean
 }
 
 export default function AdminTestimonials() {
@@ -26,7 +30,9 @@ export default function AdminTestimonials() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<Testimonial | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
-  const [form, setForm] = useState({ name: '', content: '', rating: '5', isActive: true })
+  const [form, setForm] = useState({ name: '', content: '', rating: '5', phone: '', email: '', avatarUrl: '', isActive: true })
+  const [saving, setSaving] = useState(false)
+  const [reviewPhoto, setReviewPhoto] = useState<string | null>(null)
 
   const load = () => {
     setLoading(true)
@@ -41,17 +47,18 @@ export default function AdminTestimonials() {
 
   const openCreate = () => {
     setEditing(null)
-    setForm({ name: '', content: '', rating: '5', isActive: true })
+    setForm({ name: '', content: '', rating: '5', phone: '', email: '', avatarUrl: '', isActive: true })
     setModalOpen(true)
   }
 
   const openEdit = (t: Testimonial) => {
     setEditing(t)
-    setForm({ name: t.name, content: t.content, rating: t.rating, isActive: t.isActive })
+    setForm({ name: t.name, content: t.content, rating: t.rating, phone: t.phone || '', email: t.email || '', avatarUrl: t.avatarUrl || '', isActive: t.isActive })
     setModalOpen(true)
   }
 
   const handleSave = async () => {
+    setSaving(true)
     try {
       if (editing) {
         await api.put(`/admin/testimonials/${editing.id}`, form)
@@ -65,7 +72,19 @@ export default function AdminTestimonials() {
     } catch (err: any) {
       console.error('Testimonial save error:', err.response?.data || err.message)
       toast.error(err.response?.data?.error || err.response?.data?.message || 'Gagal menyimpan')
+    } finally {
+      setSaving(false)
     }
+  }
+
+  const openReview = (url: string) => {
+    setModalOpen(false)
+    setTimeout(() => setReviewPhoto(url), 150)
+  }
+
+  const closeReview = () => {
+    setReviewPhoto(null)
+    setTimeout(() => setModalOpen(true), 150)
   }
 
   const handleDelete = async (id: number) => {
@@ -112,6 +131,9 @@ export default function AdminTestimonials() {
           <div className="space-y-3">
             {testimonials.map((t) => (
               <div key={t.id} className="flex items-center gap-4 p-4 rounded-xl bg-white border border-border">
+                {t.avatarUrl && (
+                  <img src={t.avatarUrl} alt={t.name} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-medium text-sm">{t.name}</span>
@@ -120,11 +142,17 @@ export default function AdminTestimonials() {
                         <Star key={i} className="h-3 w-3 fill-primary text-primary" />
                       ))}
                     </div>
-                    <Badge variant={t.isActive ? 'default' : 'secondary'} className="ml-2 text-[10px] px-1.5 py-0">
-                      {t.isActive ? 'Aktif' : 'Nonaktif'}
+                    <Badge variant={t.isActive ? 'default' : 'secondary'} className="text-[10px] px-1.5 py-0">
+                      {t.isActive ? 'Aktif' : 'Pending'}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground line-clamp-2">{t.content}</p>
+                  {(t.phone || t.email) && (
+                    <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground">
+                      {t.phone && <span>📞 {t.phone}</span>}
+                      {t.email && <span>✉ {t.email}</span>}
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <Switch checked={t.isActive} onCheckedChange={() => toggleActive(t)} />
@@ -157,7 +185,16 @@ export default function AdminTestimonials() {
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editing ? 'Edit Testimoni' : 'Tambah Testimoni'}</DialogTitle>
+              <DialogTitle>
+                <div className="flex items-center gap-3">
+                  {editing ? 'Edit Testimoni' : 'Tambah Testimoni'}
+                  {editing && (
+                    <Badge variant={editing.isAdminCreated ? 'default' : 'secondary'} className="text-[10px] px-2 py-0.5 font-normal">
+                      {editing.isAdminCreated ? 'oleh Admin' : 'oleh User'}
+                    </Badge>
+                  )}
+                </div>
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -172,6 +209,42 @@ export default function AdminTestimonials() {
                   value={form.content}
                   onChange={(e) => setForm({ ...form, content: e.target.value })}
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Telepon</Label>
+                  <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+62" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@contoh.com" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                    <Label>Foto</Label>
+                <div className="flex items-center gap-3">
+                  {form.avatarUrl ? (
+                    <div className="relative group">
+                      <img src={form.avatarUrl} alt="Foto" className="w-16 h-16 rounded-full object-cover border border-border" />
+                      <button
+                        type="button"
+                        onClick={() => openReview(form.avatarUrl!)}
+                        className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <span className="text-white text-[10px] font-medium">Review</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center border border-border">
+                      <Camera className="h-5 w-5 text-muted-foreground/50" />
+                    </div>
+                  )}
+                  {form.avatarUrl && (
+                    <Button variant="ghost" size="sm" onClick={() => openReview(form.avatarUrl!)}>
+                      Review
+                    </Button>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -196,13 +269,34 @@ export default function AdminTestimonials() {
               </div>
               <div className="flex gap-3 justify-end pt-2">
                 <Button variant="outline" onClick={() => setModalOpen(false)}>Batal</Button>
-                <Button onClick={handleSave} disabled={!form.name || !form.content}>
-                  {editing ? 'Simpan' : 'Tambah'}
+                <Button onClick={handleSave} disabled={saving || !form.name || !form.content} className="gap-2">
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {saving ? 'Menyimpan...' : editing ? 'Simpan' : 'Tambah'}
                 </Button>
               </div>
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Review Photo Overlay */}
+        {reviewPhoto && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4"
+            onClick={closeReview}
+          >
+            <div className="relative max-w-lg w-full bg-white rounded-2xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="relative flex items-center justify-center p-2 min-h-[50vh]">
+                <span
+                  onClick={closeReview}
+                  className="absolute top-2 right-2 flex items-center justify-center w-8 h-8 rounded-full bg-black/10 hover:bg-black/20 transition-colors cursor-pointer z-10"
+                >
+                  <X className="h-4 w-4" />
+                </span>
+                <img src={reviewPhoto} alt="Review" className="max-h-[70vh] w-auto rounded-lg object-contain" />
+              </div>
+            </div>
+          </div>
+        )}
       </motion.div>
     </AdminLayout>
   )

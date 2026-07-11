@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Sparkles, Shield, Leaf, Heart, Zap, Wind, Briefcase, Smile, Star, Award, Crown, Gift, Trophy, Sun, Moon, Users, Globe, Palette, ThumbsUp, Diamond, FileText, Download } from 'lucide-react'
+import { Sparkles, Shield, Leaf, Heart, Zap, Wind, Briefcase, Smile, Star, Award, Crown, Gift, Trophy, Sun, Moon, Users, Globe, Palette, ThumbsUp, Diamond, FileText, Image as ImageIcon, ExternalLink } from 'lucide-react'
 import { Badge } from '../components/ui/badge'
 import api from '../lib/api'
 
@@ -19,12 +19,23 @@ function getInitials(name: string) {
   return name.slice(0, 2).toUpperCase()
 }
 
+interface LegalItem {
+  title: string
+  description: string
+  date: string
+  url: string
+}
+
 export default function About() {
   const [content, setContent] = useState<Record<string, string>>({})
+  const [legalItems, setLegalItems] = useState<LegalItem[]>([])
 
   useEffect(() => {
     api.get('/about-content').then((res) => {
       if (res.data) setContent(res.data)
+    }).catch(() => {})
+    api.get('/legal-achievements').then((res) => {
+      if (Array.isArray(res.data)) setLegalItems(res.data)
     }).catch(() => {})
   }, [])
 
@@ -34,15 +45,6 @@ export default function About() {
     { icon: content.about_value_3_icon, title: content.about_value_3_title || 'Keberlanjutan', desc: content.about_value_3_desc || 'Komitmen kami pada lingkungan dengan kemasan ramah lingkungan.' },
     { icon: content.about_value_4_icon, title: content.about_value_4_title || 'Kepuasan Pelanggan', desc: content.about_value_4_desc || 'Pelanggan adalah prioritas utama kami dalam setiap inovasi.' },
   ]
-
-  const permits = [
-    { title: content.about_permit_1_title, url: content.about_permit_1_url },
-    { title: content.about_permit_2_title, url: content.about_permit_2_url },
-    { title: content.about_permit_3_title, url: content.about_permit_3_url },
-    { title: content.about_permit_4_title, url: content.about_permit_4_url },
-    { title: content.about_permit_5_title, url: content.about_permit_5_url },
-    { title: content.about_permit_6_title, url: content.about_permit_6_url },
-  ].filter((p) => p.url)
 
   const team = [
     { image: content.about_team_1_image, name: content.about_team_1_name || 'Dr. Maya Wijaya', role: content.about_team_1_role || 'Founder & CEO' },
@@ -182,8 +184,8 @@ export default function About() {
           </div>
         </motion.div>
 
-        {/* Perizinan — di atas footer */}
-        {permits.length > 0 && (
+        {/* Legal & Achievement — ala Sariayu */}
+        {legalItems.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -197,49 +199,66 @@ export default function About() {
               </div>
               <div className="relative flex justify-center">
                 <Badge variant="outline" className="tracking-[0.15em] text-[11px] uppercase px-5 py-1.5 rounded-full border-primary/20 text-primary bg-white">
-                  Legal
+                  Legal & Achievement
                 </Badge>
               </div>
             </div>
             <div className="text-center mb-14">
               <h2 className="font-heading text-4xl sm:text-5xl font-bold leading-[1.1] tracking-tight text-balance">
-                {content.about_permit_title || 'Perizinan'}
+                Legal & Sertifikat
               </h2>
               <div className="w-12 h-0.5 bg-primary/20 mx-auto mt-5" />
             </div>
-            <div className="max-w-5xl mx-auto space-y-12">
-              {permits.map((p, i) => (
+            <div className="grid sm:grid-cols-2 gap-6 max-w-5xl mx-auto">
+              {legalItems.map((item, i) => (
                 <motion.div
-                  key={p.title || i}
+                  key={i}
                   initial={{ opacity: 0, y: 16 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.1, duration: 0.5 }}
-                  className="bg-white rounded-3xl border border-border overflow-hidden shadow-sm"
+                  transition={{ delay: i * 0.05, duration: 0.4 }}
+                  className="group relative bg-white rounded-2xl border border-border overflow-hidden hover:shadow-md transition-all"
                 >
-                  <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/20">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-destructive/5 flex items-center justify-center">
-                        <FileText className="h-4 w-4 text-destructive" />
-                      </div>
-                      <h3 className="font-heading font-semibold">{p.title || `Dokumen ${i + 1}`}</h3>
+                  {/* Thumbnail / Preview */}
+                  {item.url && item.url.match(/\.pdf$/i) ? (
+                    <div className="aspect-[4/3] bg-muted/10 overflow-hidden">
+                      <iframe
+                        src={`${item.url}#toolbar=0&view=FitH`}
+                        className="w-full h-full border-0"
+                        title={item.title}
+                      />
                     </div>
-                    <a
-                      href={p.url}
-                      download
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-                    >
-                      <Download className="h-4 w-4" />
-                      Download
-                    </a>
-                  </div>
-                  <div className="bg-muted/10">
-                    <iframe
-                      src={`${p.url}#toolbar=0`}
-                      className="w-full border-0"
-                      style={{ height: 'min(80vh, 700px)' }}
-                      title={p.title || `Dokumen ${i + 1}`}
-                    />
+                  ) : item.url ? (
+                    <div className="aspect-[16/9] overflow-hidden bg-muted/10">
+                      <img
+                        src={item.url}
+                        alt={item.title}
+                        className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  ) : null}
+
+                  <div className="p-5">
+                    {item.date && (
+                      <Badge variant="outline" className="mb-3 text-[11px] px-2.5 py-0.5 border-primary/20 text-primary/70 font-normal">
+                        {new Date(item.date).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </Badge>
+                    )}
+                    <h3 className="font-heading font-bold text-base mb-2 leading-snug">{item.title}</h3>
+                    {item.description && (
+                      <p className="text-sm text-muted-foreground leading-relaxed mb-4">{item.description}</p>
+                    )}
+                    {item.url && (
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+                      >
+                        {item.url.match(/\.pdf$/i) ? 'Lihat Dokumen' : 'Lihat Sertifikat'}
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    )}
                   </div>
                 </motion.div>
               ))}
