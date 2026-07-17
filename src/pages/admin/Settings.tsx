@@ -148,7 +148,7 @@ export default function AdminSettings() {
   }
 
   const regularGroups = settings.reduce<Record<string, Setting[]>>((acc, s) => {
-    if (s.group === 'brands') return acc
+    if (s.group === 'brands' || s.group === 'legal') return acc
     if (!acc[s.group]) acc[s.group] = []
     acc[s.group].push(s)
     return acc

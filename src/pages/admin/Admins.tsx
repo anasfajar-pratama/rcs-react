@@ -72,8 +72,14 @@ export default function AdminAdmins() {
       }
       setModalOpen(false)
       load()
-    } catch {
-      toast.error('Gagal menyimpan admin')
+    } catch (err: any) {
+      const errors = err.response?.data?.errors
+      if (errors) {
+        const messages = Object.values(errors).flat()
+        toast.error(messages.join(', '))
+      } else {
+        toast.error(err.response?.data?.message || err.response?.data?.error || 'Gagal menyimpan admin')
+      }
     }
   }
 

@@ -151,7 +151,7 @@ export default function About() {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <div className="text-center mb-16">
+          {/* <div className="text-center mb-16">
             <Badge variant="outline" className="mb-4 tracking-[0.15em] text-[11px] uppercase px-4 py-1.5 rounded-full border-primary/20 text-primary">
               Tim
             </Badge>
@@ -159,8 +159,8 @@ export default function About() {
               {content.about_team_title || 'Tim Kami'}
             </h2>
             <div className="w-12 h-0.5 bg-primary/20 mx-auto mt-6" />
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          </div> */}
+          {/* <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {team.map((m, i) => (
               <motion.div
                 key={m.name}
@@ -181,7 +181,7 @@ export default function About() {
                 <p className="text-sm text-muted-foreground">{m.role}</p>
               </motion.div>
             ))}
-          </div>
+          </div> */}
         </motion.div>
 
         {/* Legal & Achievement — ala Sariayu */}

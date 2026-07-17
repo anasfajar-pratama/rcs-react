@@ -48,6 +48,7 @@ export default function Home() {
   const [camReady, setCamReady] = useState(false)
   const [faceDetecting, setFaceDetecting] = useState(false)
   const [faceVerified, setFaceVerified] = useState(false)
+  const [adminWhatsApp, setAdminWhatsApp] = useState('')
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -66,6 +67,7 @@ export default function Home() {
       api.get('/settings').then((res) => {
         if (res.data) {
           setTestimonialEnabled(res.data.testimonial_enabled === '1')
+          if (res.data.whatsapp_phone) setAdminWhatsApp(res.data.whatsapp_phone)
         }
       }),
     ]).catch(() => {}).finally(() => setPageLoading(false))
@@ -73,7 +75,7 @@ export default function Home() {
 
   const promoProducts = products.filter((p) => p.isPromo).slice(0, 4)
   const newProducts = products.filter((p) => p.isNew).slice(0, 4)
-  const featuredProducts = products.filter((p) => p.isFeatured).slice(0, 6)
+  const featuredProducts = products.filter((p) => p.isFeatured).slice(0, 4)
 
   const startCamera = async () => {
     setPhotoError(null)
@@ -193,6 +195,30 @@ export default function Home() {
       })
 
       setSubmitSuccess(true)
+
+      if (adminWhatsApp) {
+        const stars = '⭐'.repeat(Number(formData.rating))
+        const now = new Date().toLocaleDateString('id-ID', {
+          day: 'numeric', month: 'long', year: 'numeric',
+          hour: '2-digit', minute: '2-digit',
+        })
+        const lines = [
+          'Halo Kak Admin Rindang Cemara Sukses! 🌸',
+          '',
+          'Aku mau berbagi cerita manis buat kita nih:',
+          '',
+          '*Nama:* ' + formData.name,
+          '*Rating:* ' + stars,
+          '"' + formData.content + '"',
+        ]
+        if (formData.phone) lines.push('', '*Kontak:* ' + formData.phone)
+        lines.push('', '*Waktu:* ' + now)
+        lines.push('', 'Terima kasih ya, Kak! 💖')
+
+        const text = encodeURIComponent(lines.join('\n'))
+        window.open(`https://wa.me/${adminWhatsApp}?text=${text}`, '_blank')
+      }
+
       setTimeout(() => {
         setShowForm(false)
         setSubmitSuccess(false)
@@ -316,7 +342,7 @@ export default function Home() {
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.08, duration: 0.4 }}
                 >
-                  <ProductCard product={product} onQuickView={setQuickViewProduct} />
+                  <ProductCard product={product} onQuickView={setQuickViewProduct} showPromoBadge />
                 </motion.div>
               ))}
             </div>
@@ -344,7 +370,7 @@ export default function Home() {
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.05, duration: 0.4 }}
                 >
-                  <ProductCard product={product} onQuickView={setQuickViewProduct} />
+                  <ProductCard product={product} onQuickView={setQuickViewProduct} showNewBadge />
                 </motion.div>
               ))}
             </div>
@@ -587,7 +613,7 @@ export default function Home() {
                     {/* Foto */}
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">Foto Verifikasi</Label>
-                      <p className="text-xs text-muted-foreground">Ambil foto diri Anda. Foto harus memperlihatkan wajah dengan jelas.</p>
+                      <p className="text-xs text-muted-foreground">Ambil foto diri anda plus produk . Foto harus memperlihatkan wajah dan produk dengan jelas.</p>
 
                       <canvas ref={canvasRef} className="hidden" />
 
@@ -681,7 +707,7 @@ export default function Home() {
       </AnimatePresence>
 
       {/* Newsletter */}
-      <section className="py-16 sm:py-20 bg-gradient-to-r from-primary/5 to-accent/5">
+      {/* <section className="py-16 sm:py-20 bg-gradient-to-r from-primary/5 to-accent/5">
         <div className="max-w-2xl mx-auto px-4 text-center">
           <motion.div {...fadeUp}>
             <h2 className="font-heading text-2xl sm:text-3xl font-bold mb-3">
@@ -700,7 +726,7 @@ export default function Home() {
             </form>
           </motion.div>
         </div>
-      </section>
+      </section> */}
 
       {quickViewProduct && (
         <ProductQuickView product={quickViewProduct} onClose={() => setQuickViewProduct(null)} />

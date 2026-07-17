@@ -68,11 +68,29 @@ body {
   --toastify-color-progress-light: #D4A574;
 }
 
+/* Custom scrollbar - global */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-primary) 50%, transparent);
+  border-radius: 999px;
+  transition: background 0.2s ease;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-primary) 50%, transparent) transparent;
+}
+
 .sidebar-scroll::-webkit-scrollbar {
   width: 4px;
-}
-.sidebar-scroll::-webkit-scrollbar-track {
-  background: transparent;
 }
 .sidebar-scroll::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.12);

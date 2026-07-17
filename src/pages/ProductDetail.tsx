@@ -127,8 +127,8 @@ export default function ProductDetail() {
                   style={{
                     clipPath: 'polygon(0% 0%, 100% 0%, 100% 75%, 50% 100%, 0% 75%)',
                     background: 'linear-gradient(180deg, #fbbf24 0%, #eab308 25%, #d97706 60%, #ea580c 100%)',
-                    width: 78,
-                    padding: '12px 10px 18px',
+                    width: 104,
+                    padding: '16px 14px 24px',
                   }}
                 >
                   <div
@@ -138,8 +138,8 @@ export default function ProductDetail() {
                       background: 'linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 50%)',
                     }}
                   />
-                  <Crown className="h-[17px] w-[17px] text-white drop-shadow-sm" />
-                  <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/90 leading-none mt-1">
+                  <Crown className="h-[23px] w-[23px] text-white drop-shadow-sm" />
+                  <span className="text-[15px] font-bold uppercase tracking-[0.15em] text-white/90 leading-none mt-1">
                     TOP
                   </span>
                 </div>

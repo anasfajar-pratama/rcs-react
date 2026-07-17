@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Edit3, Trash2, Star, Camera, X, Loader2 } from 'lucide-react'
+import { Plus, Edit3, Trash2, Star, Camera, X, Loader2, MessageSquare, Send } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
@@ -33,6 +33,7 @@ export default function AdminTestimonials() {
   const [form, setForm] = useState({ name: '', content: '', rating: '5', phone: '', email: '', avatarUrl: '', isActive: true })
   const [saving, setSaving] = useState(false)
   const [reviewPhoto, setReviewPhoto] = useState<string | null>(null)
+  const [waReplyMessage, setWaReplyMessage] = useState('')
 
   const load = () => {
     setLoading(true)
@@ -54,6 +55,7 @@ export default function AdminTestimonials() {
   const openEdit = (t: Testimonial) => {
     setEditing(t)
     setForm({ name: t.name, content: t.content, rating: t.rating, phone: t.phone || '', email: t.email || '', avatarUrl: t.avatarUrl || '', isActive: t.isActive })
+    setWaReplyMessage(defaultWaMessage(t.name))
     setModalOpen(true)
   }
 
@@ -105,6 +107,38 @@ export default function AdminTestimonials() {
       console.error('Toggle active error:', err.response?.data || err.message)
       toast.error('Gagal mengubah status')
     }
+  }
+
+  const defaultWaMessage = (name: string) =>
+    `Halo ${name}!
+
+Terima kasih banyak telah meluangkan waktu untuk memberikan ulasan produk kami. Kami senang sekali mendengar pengalaman positifmu menggunakan produk Rindang Cemara Sukses! 😊
+
+Semoga produk kami terus memberikan manfaat terbaik. Jangan ragu untuk menghubungi kami lagi jika ada pertanyaan atau perlu rekomendasi produk lainnya.
+
+Salam hangat,
+Tim Rindang Cemara Sukses 🌸`
+
+  const formatText = (before: string, after: string) => {
+    const el = document.getElementById('wa-reply-textarea') as HTMLTextAreaElement
+    if (!el) return
+    const start = el.selectionStart
+    const end = el.selectionEnd
+    const selected = waReplyMessage.substring(start, end) || 'teks'
+    const next = waReplyMessage.substring(0, start) + before + selected + after + waReplyMessage.substring(end)
+    setWaReplyMessage(next)
+    requestAnimationFrame(() => {
+      el.focus()
+      el.setSelectionRange(start + before.length, start + before.length + selected.length)
+    })
+  }
+
+  const handleSendWaReply = () => {
+    let phone = form.phone.replace(/\D/g, '')
+    if (phone.startsWith('0')) phone = '62' + phone.slice(1)
+    if (!phone.startsWith('62')) phone = '62' + phone
+    const text = encodeURIComponent(waReplyMessage)
+    window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
   }
 
   return (
@@ -183,11 +217,11 @@ export default function AdminTestimonials() {
         )}
 
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-          <DialogContent>
+          <DialogContent className="max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 <div className="flex items-center gap-3">
-                  {editing ? 'Edit Testimoni' : 'Tambah Testimoni'}
+                  {editing ? 'Detail Testimoni' : 'Tambah Testimoni'}
                   {editing && (
                     <Badge variant={editing.isAdminCreated ? 'default' : 'secondary'} className="text-[10px] px-2 py-0.5 font-normal">
                       {editing.isAdminCreated ? 'oleh Admin' : 'oleh User'}
@@ -267,7 +301,46 @@ export default function AdminTestimonials() {
                   </div>
                 </div>
               </div>
-              <div className="flex gap-3 justify-end pt-2">
+              {editing && form.phone && (
+                <div className="space-y-2 pt-2 border-t border-border">
+                  <Label className="flex items-center gap-2 text-sm font-medium">
+                    <MessageSquare className="h-4 w-4 text-primary" /> Balas via WhatsApp
+                  </Label>
+                  <div className="flex items-center gap-1 p-1.5 rounded-xl border border-border bg-muted/30">
+                    <button
+                      type="button" onClick={() => formatText('*', '*')}
+                      className="w-8 h-8 rounded-lg text-sm font-bold hover:bg-white hover:shadow-sm transition-all"
+                      title="Tebal"
+                    >B</button>
+                    <span className="w-px h-5 bg-border" />
+                    <button
+                      type="button" onClick={() => formatText('_', '_')}
+                      className="w-8 h-8 rounded-lg text-sm italic font-serif hover:bg-white hover:shadow-sm transition-all"
+                      title="Miring"
+                    >I</button>
+                    <span className="w-px h-5 bg-border" />
+                    <button
+                      type="button" onClick={() => formatText('~', '~')}
+                      className="w-8 h-8 rounded-lg text-sm underline hover:bg-white hover:shadow-sm transition-all"
+                      title="Coret"
+                    >U</button>
+                  </div>
+                  <textarea
+                    id="wa-reply-textarea"
+                    className="flex w-full rounded-xl border border-border bg-white px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary resize-none leading-relaxed"
+                    rows={8}
+                    value={waReplyMessage}
+                    onChange={(e) => setWaReplyMessage(e.target.value)}
+                  />
+                  <div className="flex justify-end">
+                    <Button onClick={handleSendWaReply} className="gap-2">
+                      <Send className="h-4 w-4" /> Kirim via WhatsApp
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 pt-2">
                 <Button variant="outline" onClick={() => setModalOpen(false)}>Batal</Button>
                 <Button onClick={handleSave} disabled={saving || !form.name || !form.content} className="gap-2">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}

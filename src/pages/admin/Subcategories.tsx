@@ -11,8 +11,10 @@ import { AdminLayout, AdminLoader } from './AdminLayout'
 import api from '../../lib/api'
 import { toast } from 'sonner'
 import { fallbackSubcategories, type Subcategory } from '../../data/products'
+import { BRANDS } from '../../data/brands'
 
 const categories = ['Wanita', 'Pria', 'Anak']
+const categoryBrand = (cat: string) => BRANDS[cat]?.name || cat
 
 export default function AdminSubcategories() {
   const [subcategories, setSubcategories] = useState<Subcategory[]>([])
@@ -98,7 +100,7 @@ export default function AdminSubcategories() {
           <div className="space-y-6">
             {grouped.map(({ category, items }) => (
               <div key={category}>
-                <h3 className="font-heading font-semibold text-lg mb-3">{category}</h3>
+                <h3 className="font-heading font-semibold text-lg mb-3">{categoryBrand(category)}</h3>
                 {items.length === 0 ? (
                   <p className="text-sm text-muted-foreground ml-1">Belum ada subkategori</p>
                 ) : (
@@ -155,13 +157,13 @@ export default function AdminSubcategories() {
                 <Input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} placeholder="Contoh: serum" />
               </div>
               <div className="space-y-2">
-                <Label>Kategori</Label>
+                <Label>Brand</Label>
                 <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    {categories.map((c) => <SelectItem key={c} value={c}>{categoryBrand(c)}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

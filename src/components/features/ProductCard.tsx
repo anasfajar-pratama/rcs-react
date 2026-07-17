@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'wouter'
-import { Heart, Eye, Crown, Star } from 'lucide-react'
+import { Heart, Eye, Crown, Star, Sparkles, Zap } from 'lucide-react'
 import { useWishlist } from '../../hooks/use-wishlist'
 import { cn, formatPrice } from '../../lib/utils'
 import type { Product } from '../../data/products'
@@ -10,6 +10,9 @@ interface ProductCardProps {
   product: Product
   onQuickView?: (product: Product) => void
   rank?: number
+  showNewBadge?: boolean
+  showPromoBadge?: boolean
+  showFeaturedBadge?: boolean
 }
 
 function formatSoldCount(count?: number): string {
@@ -20,7 +23,7 @@ function formatSoldCount(count?: number): string {
   return count.toString()
 }
 
-export function ProductCard({ product, onQuickView, rank }: ProductCardProps) {
+export function ProductCard({ product, onQuickView, rank, showNewBadge, showPromoBadge, showFeaturedBadge }: ProductCardProps) {
   const { isWishlisted, toggleItem } = useWishlist()
   const wishlisted = isWishlisted(product.id)
   const [imgError, setImgError] = useState(false)
@@ -34,6 +37,9 @@ export function ProductCard({ product, onQuickView, rank }: ProductCardProps) {
   }
   const rating = product.rating ?? 0
   const filledStars = Math.round(rating)
+  const discountPercent = product.originalPrice && product.price
+    ? Math.round((1 - product.price / product.originalPrice) * 100)
+    : 0
 
   return (
     <div className="group relative bg-white rounded-2xl border border-border overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
@@ -81,6 +87,44 @@ export function ProductCard({ product, onQuickView, rank }: ProductCardProps) {
               </span>
             </div>
           )}
+          {/* Featured TOP Badge */}
+          {showFeaturedBadge && product.isFeatured && (
+            <div
+              className="absolute top-0 left-0 z-10 flex flex-col items-center pointer-events-none"
+              title="Produk Unggulan"
+              style={{
+                clipPath: 'polygon(0% 0%, 100% 0%, 100% 80%, 50% 100%, 0% 80%)',
+                background: 'linear-gradient(180deg, #fbbf24 0%, #eab308 25%, #d97706 60%, #ea580c 100%)',
+                width: 59,
+                padding: '6px 7px 12px',
+              }}
+            >
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  clipPath: 'polygon(0% 0%, 100% 0%, 100% 80%, 50% 100%, 0% 80%)',
+                  background: 'linear-gradient(180deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 50%)',
+                }}
+              />
+              <Crown className="h-3 w-3 text-white drop-shadow-sm" />
+              <span className="text-[7px] font-bold uppercase tracking-[0.15em] text-white/90 leading-none mt-0.5">TOP</span>
+            </div>
+          )}
+          {/* Badge Stack: New + Promo */}
+          <div className="absolute bottom-2 right-2 z-10 flex flex-col gap-1 pointer-events-none">
+            {showNewBadge && product.isNew && (
+              <div className="rounded-full bg-yellow-400 px-2.5 py-0.5 shadow-lg shadow-yellow-400/30 flex items-center gap-1 pointer-events-none">
+                <Sparkles className="h-3 w-3 text-yellow-900" />
+                <span className="text-yellow-900 text-[10px] font-bold tracking-wider">Produk Baru</span>
+              </div>
+            )}
+            {showPromoBadge && product.isPromo && discountPercent > 0 && (
+              <div className="rounded-lg bg-red-600 px-2 py-0.5 shadow-lg shadow-red-600/30 flex items-center gap-1 pointer-events-none">
+                <Zap className="h-3 w-3 text-white" />
+                <span className="text-white text-[10px] font-extrabold tracking-wider">Extra Promo -{discountPercent}%</span>
+              </div>
+            )}
+          </div>
           {/* Brand Badge */}
           <div
             className="absolute bottom-2 left-2 z-10 rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider pointer-events-none"

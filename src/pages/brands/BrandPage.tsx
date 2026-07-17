@@ -276,7 +276,13 @@ export default function BrandPage({ slug }: BrandPageProps) {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.05, duration: 0.4 }}
               >
-                <ProductCard product={product} onQuickView={setQuickViewProduct} />
+                <ProductCard
+                  product={product}
+                  onQuickView={setQuickViewProduct}
+                  showFeaturedBadge
+                  showNewBadge
+                  showPromoBadge
+                />
               </motion.div>
             ))}
           </div>

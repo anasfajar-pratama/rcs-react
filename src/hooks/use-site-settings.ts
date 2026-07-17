@@ -5,6 +5,7 @@ interface SiteSettings {
   site_name?: string
   site_description?: string
   site_logo?: string
+  site_favicon?: string
   [key: string]: string | undefined
 }
 
@@ -28,6 +29,10 @@ export function useSiteSettings() {
       if (res.data) {
         setSettings(res.data)
         localStorage.setItem(CACHE_KEY, JSON.stringify(res.data))
+        if (res.data.site_favicon) {
+          const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
+          if (link) link.href = res.data.site_favicon
+        }
       }
     }).catch(() => {}).finally(() => setLoaded(true))
   }, [])
