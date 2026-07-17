@@ -1,5 +1,5 @@
 import { Link } from 'wouter'
-import { Instagram, Facebook, Twitter, Youtube } from 'lucide-react'
+import { Instagram, Facebook, Twitter, Youtube, Music2, Mail, Phone, MapPin, MessageCircle } from 'lucide-react'
 import { useSiteSettings } from '../../hooks/use-site-settings'
 
 export function Footer() {
@@ -13,12 +13,17 @@ export function Footer() {
     { label: 'Facebook', href: settings.social_facebook || '#', icon: Facebook },
     { label: 'Twitter', href: settings.social_twitter || '#', icon: Twitter },
     { label: 'Youtube', href: settings.social_youtube || '#', icon: Youtube },
+    { label: 'TikTok', href: settings.social_tiktok || '#', icon: Music2 },
   ]
+
+  const waNumber = settings.whatsapp_phone || ''
+  const waMessage = encodeURIComponent('Halo, saya tertarik untuk mendalami produk Rindang Cemara Sukses.')
+  const waUrl = waNumber ? `https://wa.me/${waNumber}?text=${waMessage}` : '#'
 
   return (
     <footer className="bg-foreground text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           <div className="col-span-2 md:col-span-1">
             {settings.site_logo ? (
               <img src={settings.site_logo} alt={siteName} className="h-8 w-auto mb-4 brightness-0 invert" />
@@ -28,9 +33,6 @@ export function Footer() {
               </h3>
             )}
             <p className="text-sm text-white/60 leading-relaxed">{siteDesc}</p>
-            {settings.contact_address && (
-              <p className="text-sm text-white/40 mt-3 leading-relaxed">{settings.contact_address}</p>
-            )}
           </div>
 
           <div>
@@ -45,12 +47,47 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="font-heading font-semibold text-sm mb-3 uppercase tracking-wider text-white/80">Kontak</h4>
+            <h4 className="font-heading font-semibold text-sm mb-3 uppercase tracking-wider text-white/80">Menu</h4>
             <ul className="space-y-2">
-              {settings.contact_email && <li className="text-sm text-white/50">{settings.contact_email}</li>}
-              {settings.contact_phone && <li className="text-sm text-white/50">{settings.contact_phone}</li>}
+              <li><Link href="/" className="text-sm text-white/50 hover:text-primary transition-colors">Beranda</Link></li>
               <li><Link href="/contact" className="text-sm text-white/50 hover:text-primary transition-colors">Hubungi Kami</Link></li>
               <li><Link href="/about" className="text-sm text-white/50 hover:text-primary transition-colors">Tentang Kami</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-heading font-semibold text-sm mb-3 uppercase tracking-wider text-white/80">Kontak</h4>
+            <ul className="space-y-2">
+              {settings.contact_email && (
+                <li>
+                  <a href={`mailto:${settings.contact_email}`} className="flex items-center gap-2 text-sm text-white/50 hover:text-primary transition-colors">
+                    <Mail className="h-3.5 w-3.5 shrink-0" />
+                    {settings.contact_email}
+                  </a>
+                </li>
+              )}
+              {settings.contact_phone && (
+                <li>
+                  <a href={`tel:${settings.contact_phone}`} className="flex items-center gap-2 text-sm text-white/50 hover:text-primary transition-colors">
+                    <Phone className="h-3.5 w-3.5 shrink-0" />
+                    {settings.contact_phone}
+                  </a>
+                </li>
+              )}
+              {waNumber && (
+                <li>
+                  <a href={waUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-white/50 hover:text-green-400 transition-colors">
+                    <MessageCircle className="h-3.5 w-3.5 shrink-0" />
+                    {waNumber}
+                  </a>
+                </li>
+              )}
+              {settings.contact_address && (
+                <li className="flex items-start gap-2 text-sm text-white/50">
+                  <MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                  {settings.contact_address}
+                </li>
+              )}
             </ul>
           </div>
 

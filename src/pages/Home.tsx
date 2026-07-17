@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { Link } from 'wouter'
-import { ArrowRight, Sparkles, Shield, Leaf, Star, Gift, Clock, Trophy, MessageSquare, Camera, X, Loader2, CheckCircle2 } from 'lucide-react'
+import { ArrowRight, Sparkles, Shield, Leaf, Star, Gift, Clock, Trophy, MessageSquare, Camera, X, Loader2, CheckCircle2, ChevronLeft, ChevronRight, Award, Heart, BadgeCheck, Gem, Flower2, Droplets, Palette, Smile, Sparkle, Feather, Wind, Sun } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
@@ -21,7 +21,12 @@ const fadeUp = {
   transition: { duration: 0.6 },
 }
 
-const features = [
+const FEATURE_ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Sparkles, Shield, Leaf, Star, Award, Heart, BadgeCheck, Gem,
+  Flower2, Droplets, Palette, Smile, Sparkle, Feather, Wind, Sun,
+}
+
+const defaultFeatures = [
   { icon: Sparkles, title: 'Teknologi Terkini', desc: 'Inovasi terbaru untuk hasil maksimal' },
   { icon: Shield, title: 'Material Premium', desc: 'Bahan berkualitas tinggi, aman & tahan lama' },
   { icon: Leaf, title: 'Ramah Lingkungan', desc: 'Komitmen kami untuk bumi yang lebih hijau' },
@@ -49,8 +54,19 @@ export default function Home() {
   const [faceDetecting, setFaceDetecting] = useState(false)
   const [faceVerified, setFaceVerified] = useState(false)
   const [adminWhatsApp, setAdminWhatsApp] = useState('')
+  const [galleryItems, setGalleryItems] = useState<any[]>([])
+  const [galleryIdx, setGalleryIdx] = useState(0)
+  const [selectedGalleryIdx, setSelectedGalleryIdx] = useState<number | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  const getFeaturesCards = () => {
+    try {
+      const parsed = JSON.parse(content.features_cards || '[]')
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    } catch {}
+    return null
+  }
 
   useEffect(() => {
     Promise.all([
@@ -70,8 +86,20 @@ export default function Home() {
           if (res.data.whatsapp_phone) setAdminWhatsApp(res.data.whatsapp_phone)
         }
       }),
+      api.get('/gallery').then((res) => {
+        if (res.data?.length) setGalleryItems(res.data)
+      }),
     ]).catch(() => {}).finally(() => setPageLoading(false))
   }, [])
+
+  // Auto-slide galeri
+  useEffect(() => {
+    if (galleryItems.length === 0) return
+    const timer = setInterval(() => {
+      setGalleryIdx((prev) => (prev + 1) % galleryItems.length)
+    }, 5000)
+    return () => clearInterval(timer)
+  }, [galleryItems.length])
 
   const promoProducts = products.filter((p) => p.isPromo).slice(0, 4)
   const newProducts = products.filter((p) => p.isNew).slice(0, 4)
@@ -273,7 +301,7 @@ export default function Home() {
               {content.section_kategori_subtitle || 'Temukan alat kecantikan yang sesuai dengan kebutuhanmu'}
             </p>
           </motion.div>
-          <CategoryBentoGrid />
+          <CategoryBentoGrid content={content} />
         </div>
       </section>
 
@@ -388,8 +416,8 @@ export default function Home() {
             </p>
           </motion.div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-            {features.map((f, i) => {
-              const Icon = f.icon
+            {(getFeaturesCards() || defaultFeatures).map((f, i) => {
+              const Icon = typeof f.icon === 'string' ? FEATURE_ICON_MAP[f.icon] || Star : f.icon
               return (
                 <motion.div
                   key={f.title}
@@ -701,6 +729,151 @@ export default function Home() {
                   </div>
                 </>
               )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Galeri & Berita */}
+      {galleryItems.length > 0 && (
+        <section className="py-16 sm:py-20 bg-gradient-to-r from-amber-50/80 to-rose-50/80">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <motion.div {...fadeUp} className="text-center mb-12">
+              <h2 className="font-heading text-3xl sm:text-4xl font-bold mb-3">{content.section_gallery_title || 'Galeri & Berita'}</h2>
+              <p className="text-muted-foreground max-w-xl mx-auto">
+                {content.section_gallery_subtitle || 'Setiap produk bercerita, setiap momen menginspirasi'}
+              </p>
+            </motion.div>
+
+            <div className="relative">
+              {/* Carousel Track */}
+              <div className="overflow-hidden -mx-2 sm:-mx-3">
+                <motion.div
+                  className="flex"
+                  animate={{ x: -(galleryIdx * (100 / 4)) + '%' }}
+                  transition={{ type: "spring", stiffness: 250, damping: 28, mass: 0.6 }}
+                >
+                  {Array.from({ length: galleryItems.length + 4 }, (_, i) =>
+                    galleryItems[i % galleryItems.length]
+                  ).map((item, i) => (
+                    <div
+                      key={`${item.id}-${i}`}
+                      className="min-w-0 w-1/2 md:w-1/4 flex-shrink-0 px-2 sm:px-3 cursor-pointer group"
+                      onClick={() => setSelectedGalleryIdx(i % galleryItems.length)}
+                    >
+                      <div className="aspect-square rounded-2xl overflow-hidden border border-border bg-muted/10 mb-3 transition-transform duration-300 group-hover:scale-[1.03] group-hover:shadow-lg">
+                        <img
+                          src={item.imageUrl}
+                          alt={item.title || item.altText || ''}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                        />
+                      </div>
+                      {item.title && (
+                        <h3 className="font-heading font-semibold text-sm text-center leading-snug">{item.title}</h3>
+                      )}
+                    </div>
+                  ))}
+                </motion.div>
+              </div>
+
+              {/* Nav */}
+              <div className="flex items-center justify-center gap-3 mt-8">
+                <button
+                  onClick={() => setGalleryIdx((prev) => (prev - 1 + galleryItems.length) % galleryItems.length)}
+                  className="w-9 h-9 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <div className="flex gap-1.5">
+                  {Array.from({ length: galleryItems.length }).map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setGalleryIdx(i)}
+                      className={`w-2 h-2 rounded-full transition-all ${i === galleryIdx % galleryItems.length ? 'bg-primary w-5' : 'bg-primary/20 hover:bg-primary/40'}`}
+                    />
+                  ))}
+                </div>
+                <button
+                  onClick={() => setGalleryIdx((prev) => (prev + 1) % galleryItems.length)}
+                  className="w-9 h-9 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Modal Detail Galeri */}
+      <AnimatePresence>
+        {selectedGalleryIdx !== null && galleryItems[selectedGalleryIdx] && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={(e) => { if (e.target === e.currentTarget) setSelectedGalleryIdx(null) }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-3xl shadow-xl w-full max-w-4xl max-h-[85vh] flex flex-col"
+            >
+              {/* Image with nav */}
+              <div className="relative bg-black/5 flex-shrink-0">
+                <img
+                  src={galleryItems[selectedGalleryIdx].imageUrl}
+                  alt={galleryItems[selectedGalleryIdx].title || galleryItems[selectedGalleryIdx].altText || ''}
+                  className="w-full max-h-[55vh] object-contain"
+                />
+                {/* Prev */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setSelectedGalleryIdx((selectedGalleryIdx - 1 + galleryItems.length) % galleryItems.length) }}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 hover:bg-white shadow-md flex items-center justify-center transition-colors"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                {/* Next */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setSelectedGalleryIdx((selectedGalleryIdx + 1) % galleryItems.length) }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 hover:bg-white shadow-md flex items-center justify-center transition-colors"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+                {/* Close */}
+                <button
+                  onClick={() => setSelectedGalleryIdx(null)}
+                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+                {/* Dots */}
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  {galleryItems.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={(e) => { e.stopPropagation(); setSelectedGalleryIdx(i) }}
+                      className={`w-2 h-2 rounded-full transition-all ${i === selectedGalleryIdx ? 'bg-white w-5 shadow-md' : 'bg-white/50 hover:bg-white/80'}`}
+                    />
+                  ))}
+                </div>
+              </div>
+              {/* Content */}
+              <div className="p-6 space-y-3 overflow-y-auto">
+                {galleryItems[selectedGalleryIdx].title && (
+                  <h3 className="font-heading text-xl font-bold">{galleryItems[selectedGalleryIdx].title}</h3>
+                )}
+                {galleryItems[selectedGalleryIdx].tagline && (
+                  <p className="text-sm text-muted-foreground italic">{galleryItems[selectedGalleryIdx].tagline}</p>
+                )}
+                {galleryItems[selectedGalleryIdx].description && (
+                  <div className="text-sm text-muted-foreground leading-relaxed text-justify" dangerouslySetInnerHTML={{ __html: galleryItems[selectedGalleryIdx].description }} />
+                )}
+              </div>
             </motion.div>
           </motion.div>
         )}

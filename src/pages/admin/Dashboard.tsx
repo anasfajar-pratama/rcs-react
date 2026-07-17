@@ -24,7 +24,7 @@ export default function AdminDashboard() {
     { title: 'Produk', desc: 'Kelola semua produk', href: '/admin/products', icon: Package },
     { title: 'Homepage', desc: 'Edit konten homepage', href: '/admin/homepage', icon: Package },
     { title: 'Testimoni', desc: 'Kelola testimoni pelanggan', href: '/admin/testimonials', icon: MessageSquare },
-    { title: 'Galeri', desc: 'Atur galeri gambar', href: '/admin/gallery', icon: Package },
+    { title: 'Galeri & Berita', desc: 'Atur galeri gambar & berita', href: '/admin/gallery', icon: Package },
   ]
 
   return (

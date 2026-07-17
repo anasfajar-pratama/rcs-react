@@ -4,11 +4,12 @@ import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
 import { RichEditor } from '../../components/ui/rich-editor'
+import { Switch } from '../../components/ui/switch'
 import { ImageCropperModal } from '../../components/ui/image-cropper-modal'
 import { AdminLayout, AdminLoader } from './AdminLayout'
 import api from '../../lib/api'
 import { toast } from 'sonner'
-import { ImagePlus, Loader2, Trash2, RefreshCw, FileText } from 'lucide-react'
+import { ImagePlus, Loader2, Trash2, RefreshCw, FileText, Eye, EyeOff } from 'lucide-react'
 import * as LucideIcons from 'lucide-react'
 import { validateFileSize } from '../../lib/compress-image'
 import { useImageUpload } from '../../hooks/use-image-upload'
@@ -207,25 +208,35 @@ export default function AdminAbout() {
           {/* Cerita Kami */}
           <div className="bg-white rounded-2xl border border-border p-6">
             <h2 className="font-heading text-lg font-bold mb-4 pb-3 border-b border-border">Cerita Kami</h2>
-            <div className="mb-4 space-y-2">
-              <Label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Gambar</Label>
-              {content.about_story_image && (
-                <img src={content.about_story_image} alt="Cerita Kami" className="h-32 w-auto rounded-lg border border-border object-contain mb-2" />
-              )}
-              <div className="flex gap-2">
+            <div className="flex gap-6">
+              <div className="shrink-0 w-96 space-y-3">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Gambar</Label>
                 <input ref={(el) => { fileInputRefs.current.about_story_image = el }} type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadClick('about_story_image', e)} />
-                <Button variant="outline" size="sm" className="gap-2" disabled={uploading} onClick={() => fileInputRefs.current.about_story_image?.click()}>
-                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
-                  {uploading ? 'Mengupload...' : content.about_story_image ? 'Ganti Gambar' : 'Upload Gambar'}
-                </Button>
-                {content.about_story_image && (
-                  <Button variant="ghost" size="sm" onClick={() => setContent((prev) => ({ ...prev, about_story_image: '' }))}>Hapus</Button>
-                )}
+                <div
+                  className="aspect-[4/3] rounded-xl overflow-hidden border border-border bg-muted/10 cursor-pointer"
+                  onClick={() => fileInputRefs.current.about_story_image?.click()}
+                >
+                  {content.about_story_image ? (
+                    <img src={content.about_story_image} alt="Cerita Kami" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground/40">
+                      <ImagePlus className="h-10 w-10" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="gap-2 flex-1" disabled={uploading} onClick={() => fileInputRefs.current.about_story_image?.click()}>
+                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : content.about_story_image ? 'Ganti' : 'Upload'}
+                  </Button>
+                  {content.about_story_image && (
+                    <Button variant="ghost" size="sm" onClick={() => setContent((prev) => ({ ...prev, about_story_image: '' }))}>Hapus</Button>
+                  )}
+                </div>
               </div>
-            </div>
-            <div className="grid grid-cols-1 gap-4">
-              <FieldInput field={{ key: 'about_story_heading', label: 'Judul' }} content={content} setContent={setContent} />
-              <FieldInput field={{ key: 'about_story_text', label: 'Teks Cerita', richText: true }} content={content} setContent={setContent} />
+              <div className="flex-1 space-y-4">
+                <FieldInput field={{ key: 'about_story_heading', label: 'Judul' }} content={content} setContent={setContent} />
+                <FieldInput field={{ key: 'about_story_text', label: 'Teks Cerita', richText: true }} content={content} setContent={setContent} />
+              </div>
             </div>
           </div>
 
@@ -251,7 +262,18 @@ export default function AdminAbout() {
 
           {/* Tim */}
           <div className="bg-white rounded-2xl border border-border p-6">
-            <h2 className="font-heading text-lg font-bold mb-4 pb-3 border-b border-border">Tim</h2>
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
+              <h2 className="font-heading text-lg font-bold">Tim</h2>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">{content.about_team_enabled === '1' ? 'Tampil' : 'Tersembunyi'}</span>
+                <Switch
+                  checked={content.about_team_enabled === '1'}
+                  onCheckedChange={(v) => setContent({ ...content, about_team_enabled: v ? '1' : '0' })}
+                />
+              </div>
+            </div>
+            {content.about_team_enabled === '1' && (
+            <>
             <div className="mb-6">
               <FieldInput field={{ key: 'about_team_title', label: 'Judul H1' }} content={content} setContent={setContent} />
             </div>
@@ -289,6 +311,8 @@ export default function AdminAbout() {
                 )
               })}
             </div>
+            </>
+            )}
           </div>
           {/* Legal & Achievement dikelola di halaman terpisah */}
           <div className="bg-white rounded-2xl border border-border p-6">

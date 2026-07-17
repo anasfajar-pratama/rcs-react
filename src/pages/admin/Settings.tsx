@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { Save, ImagePlus, Loader2 } from 'lucide-react'
+import { Save, ImagePlus, Loader2, Facebook, Instagram, Youtube, Twitter, Music2 } from 'lucide-react'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Label } from '../../components/ui/label'
@@ -27,6 +27,14 @@ const groupIcons: Record<string, string> = {
   social: '🌐',
   contact: '📞',
   features: '🚀',
+}
+
+const socialIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  social_facebook: Facebook,
+  social_instagram: Instagram,
+  social_youtube: Youtube,
+  social_twitter: Twitter,
+  social_tiktok: Music2,
 }
 
 export default function AdminSettings() {
@@ -175,6 +183,31 @@ export default function AdminSettings() {
                   <h2 className="font-heading font-semibold text-lg">
                     {groupIcons[group]} {groupLabels[group] || group}
                   </h2>
+                  {group === 'social' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      {items.map((s) => {
+                        const Icon = socialIcons[s.key]
+                        return (
+                          <div key={s.id} className="p-4 rounded-xl border border-border bg-muted/20 space-y-3">
+                            <div className="flex items-center gap-2">
+                              {Icon && (
+                                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                  <Icon className="h-4 w-4 text-primary" />
+                                </div>
+                              )}
+                              <Label className="text-sm font-medium">
+                                {s.key.replace('social_', '').replace(/\b\w/g, (l) => l.toUpperCase())}
+                              </Label>
+                            </div>
+                            {s.description && (
+                              <p className="text-xs text-muted-foreground">{s.description}</p>
+                            )}
+                            {renderField(s)}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
                   <div className="divide-y divide-border">
                     {items.map((s) => (
                       <div key={s.id} className="py-4 first:pt-0 last:pb-0">
@@ -188,6 +221,7 @@ export default function AdminSettings() {
                       </div>
                     ))}
                   </div>
+                  )}
                   <div className="flex justify-end pt-2">
                     <Button
                       onClick={() => handleSave(items, groupLabels[group] || group)}

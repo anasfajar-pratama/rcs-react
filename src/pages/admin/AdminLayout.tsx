@@ -35,7 +35,7 @@ const sidebarGroups: SidebarGroup[] = [
     { href: '/admin/homepage', label: 'Homepage', icon: Home, permission: 'view_homepage' },
     { href: '/admin/heroes', label: 'Hero', icon: SlidersHorizontal, permission: 'view_heroes' },
     { href: '/admin/testimonials', label: 'Testimoni', icon: MessageSquare, permission: 'view_testimonials' },
-    { href: '/admin/gallery', label: 'Galeri', icon: Image, permission: 'view_gallery' },
+    { href: '/admin/gallery', label: 'Galeri & Berita', icon: Image, permission: 'view_gallery' },
     { href: '/admin/brands', label: 'Brand', icon: Palette, permission: 'view_brands' },
     { href: '/admin/about', label: 'About', icon: Info, permission: 'view_about' },
     { href: '/admin/legal-achievements', label: 'Legal & Achievement', icon: ScrollText, permission: 'view_about' },

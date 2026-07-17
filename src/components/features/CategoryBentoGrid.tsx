@@ -24,7 +24,11 @@ const staggerContainer = {
   },
 }
 
-export function CategoryBentoGrid() {
+interface CategoryBentoGridProps {
+  content?: Record<string, string>
+}
+
+export function CategoryBentoGrid({ content = {} }: CategoryBentoGridProps) {
   const { settings } = useSiteSettings()
   const [imgErrors, setImgErrors] = useState<Record<string, boolean>>({})
 
@@ -39,8 +43,9 @@ export function CategoryBentoGrid() {
       {categories.map((cat) => {
         const brand = BRANDS[cat.key]
         const logo = settings[`logo_${brand.key}`]
-        const hero = settings[`hero_image_${brand.key}`]
+        const hero = content[`category_hero_${brand.key}`] || settings[`hero_image_${brand.key}`]
         const brandName = settings[`brand_${brand.key}_name`] || brand.name
+        const desc = content[`category_desc_${brand.key}`] || brand.description
         const hasHero = hero && !imgErrors[brand.key]
         const imgSrc = hasHero ? hero : cat.img
 
@@ -76,7 +81,7 @@ export function CategoryBentoGrid() {
               </div>
               <div>
                 <div className="mb-3 h-0.5 w-12 bg-primary" />
-                <p className="text-sm text-white/80">{brand.description}</p>
+                <div className="text-sm text-white/80" dangerouslySetInnerHTML={{ __html: desc }} />
                 <Link
                   href={`/brand/${brand.slug}`}
                   className="mt-4 inline-flex items-center gap-2 text-primary opacity-0 transition-opacity duration-300 group-hover:opacity-100"

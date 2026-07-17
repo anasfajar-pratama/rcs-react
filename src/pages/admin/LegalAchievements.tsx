@@ -167,25 +167,18 @@ export default function AdminLegalAchievements() {
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 space-y-4">
-                      <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-4">
                         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Item {idx + 1}</span>
                         <button type="button" onClick={() => removeItem(idx)} className="p-1 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors">
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">Judul</Label>
-                          <Input value={item.title} onChange={(e) => updateItem(idx, 'title', e.target.value)} placeholder="Nama legal / sertifikat" />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">Tanggal Diterima</Label>
-                          <Input type="date" value={item.date} onChange={(e) => updateItem(idx, 'date', e.target.value)} />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">Upload File</Label>
+                      <div className="flex gap-5">
+                        {/* File preview — left */}
+                        <div className="shrink-0 w-64 space-y-2">
+                          <Label className="text-xs text-muted-foreground">File</Label>
                           <input
                             ref={(el) => { fileRefs.current[`file_${idx}`] = el }}
                             type="file" accept="image/*,application/pdf" className="hidden"
@@ -195,62 +188,70 @@ export default function AdminLegalAchievements() {
                               e.target.value = ''
                             }}
                           />
-                          {item.url ? (
-                            <div className="flex items-center gap-2">
-                              <a
-                                href={item.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-muted/30 hover:bg-muted text-sm truncate"
-                              >
-                                {item.url.match(/\.pdf$/i) ? (
-                                  <FileText className="h-4 w-4 text-destructive shrink-0" />
-                                ) : (
-                                  <img src={item.url} alt="" className="h-6 w-6 rounded object-cover shrink-0" />
-                                )}
-                                <span className="truncate text-xs">Lihat file</span>
-                              </a>
+                          <div
+                            className="aspect-[3/4] rounded-xl overflow-hidden border border-border bg-muted/10 cursor-pointer"
+                            onClick={() => fileRefs.current[`file_${idx}`]?.click()}
+                          >
+                            {uploadingIdx === idx ? (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                              </div>
+                            ) : item.url ? (
+                              item.url.match(/\.pdf$/i) ? (
+                                <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                                  <FileText className="h-10 w-10 text-destructive" />
+                                  <span className="text-[10px] text-center px-1">PDF</span>
+                                </div>
+                              ) : (
+                                <img src={item.url} alt="" className="w-full h-full object-cover" />
+                              )
+                            ) : (
+                              <div className="w-full h-full flex flex-col items-center justify-center gap-1.5 text-muted-foreground/60">
+                                <ImagePlus className="h-8 w-8" />
+                                <span className="text-[10px] text-center px-1">Upload</span>
+                              </div>
+                            )}
+                          </div>
+                          {item.url && (
+                            <div className="flex gap-1">
                               <button
                                 type="button"
                                 onClick={() => fileRefs.current[`file_${idx}`]?.click()}
-                                className="w-7 h-7 rounded-full border border-border flex items-center justify-center hover:bg-muted shrink-0"
+                                className="flex-1 h-7 rounded-lg border border-border text-[11px] text-muted-foreground hover:bg-muted transition-colors"
                               >
-                                <Upload className="h-3.5 w-3.5 text-muted-foreground" />
+                                Ganti
                               </button>
                               <button
                                 type="button"
                                 onClick={() => updateItem(idx, 'url', '')}
-                                className="w-7 h-7 rounded-full border border-border flex items-center justify-center hover:bg-red-50 shrink-0"
+                                className="flex-1 h-7 rounded-lg border border-destructive/30 text-[11px] text-destructive hover:bg-red-50 transition-colors"
                               >
-                                <X className="h-3.5 w-3.5 text-muted-foreground hover:text-red-500" />
+                                Hapus
                               </button>
-                            </div>
-                          ) : (
-                            <div
-                              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-border cursor-pointer hover:border-primary/40 transition-colors"
-                              onClick={() => fileRefs.current[`file_${idx}`]?.click()}
-                            >
-                              {uploadingIdx === idx ? (
-                                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                              ) : (
-                                <>
-                                  <ImagePlus className="h-5 w-5 text-muted-foreground" />
-                                  <span className="text-sm text-muted-foreground">Upload PDF/Gambar</span>
-                                </>
-                              )}
                             </div>
                           )}
                         </div>
-                      </div>
 
-                      <div className="space-y-1.5">
-                        <Label className="text-xs text-muted-foreground">Deskripsi</Label>
-                        <textarea
-                          className="flex w-full rounded-xl border border-border bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary resize-none"
-                          rows={2} value={item.description}
-                          onChange={(e) => updateItem(idx, 'description', e.target.value)}
-                          placeholder="Deskripsi singkat..."
-                        />
+                        {/* Form fields — right */}
+                        <div className="flex-1 space-y-4">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Judul</Label>
+                            <Input value={item.title} onChange={(e) => updateItem(idx, 'title', e.target.value)} placeholder="Nama legal / sertifikat" />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Tanggal Diterima</Label>
+                            <Input type="date" value={item.date} onChange={(e) => updateItem(idx, 'date', e.target.value)} />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-muted-foreground">Deskripsi</Label>
+                            <textarea
+                              className="flex w-full rounded-xl border border-border bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary resize-none"
+                              rows={3} value={item.description}
+                              onChange={(e) => updateItem(idx, 'description', e.target.value)}
+                              placeholder="Deskripsi singkat..."
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
