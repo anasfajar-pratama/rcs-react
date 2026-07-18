@@ -32,6 +32,8 @@ import AdminAdmins from './pages/admin/Admins'
 import AdminRoles from './pages/admin/Roles'
 import AdminHeroes from './pages/admin/Heroes'
 import AdminLegalAchievements from './pages/admin/LegalAchievements'
+import AdminContactMessages from './pages/admin/AdminContactMessages'
+import AdminFaqs from './pages/admin/AdminFaqs'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false } },
@@ -61,7 +63,6 @@ function requireAdmin(Component: React.ComponentType) {
       const refreshed = sessionStorage.getItem('admin_permissions_refreshed')
       if (refreshed) {
         setReady(true)
-        return
       }
 
       import('./lib/api').then(({ default: api }) => {
@@ -70,7 +71,7 @@ function requireAdmin(Component: React.ComponentType) {
             localStorage.setItem('admin_permissions', JSON.stringify(res.data.permissions))
           }
           sessionStorage.setItem('admin_permissions_refreshed', '1')
-          setReady(true)
+          if (!refreshed) setReady(true)
         }).catch(() => {
           localStorage.removeItem('admin_token')
           localStorage.removeItem('admin_username')
@@ -121,6 +122,8 @@ export default function App() {
             <Route path="/admin/roles" component={requireAdmin(AdminRoles)} />
             <Route path="/admin/heroes" component={requireAdmin(AdminHeroes)} />
             <Route path="/admin/legal-achievements" component={requireAdmin(AdminLegalAchievements)} />
+            <Route path="/admin/contact-messages" component={requireAdmin(AdminContactMessages)} />
+            <Route path="/admin/faqs" component={requireAdmin(AdminFaqs)} />
             <Route path="/">
               <PublicLayout><Home /></PublicLayout>
             </Route>

@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'wouter'
 import { motion } from 'framer-motion'
-import { Package, MessageSquare, ExternalLink } from 'lucide-react'
+import { Package, MessageSquare, ExternalLink, Inbox } from 'lucide-react'
 import { Card, CardContent } from '../../components/ui/card'
 import { AdminLayout } from './AdminLayout'
 import api from '../../lib/api'
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({ products: 0, testimonials: 0 })
+  const [stats, setStats] = useState({ products: 0, testimonials: 0, pending_testimonials: 0, unread_messages: 0 })
 
   useEffect(() => {
     api.get('/admin/stats').then((res) => {
@@ -18,6 +18,8 @@ export default function AdminDashboard() {
   const cards = [
     { label: 'Total Produk', value: stats.products, icon: Package, href: '/admin/products', color: 'text-primary bg-primary/10' },
     { label: 'Total Testimoni', value: stats.testimonials, icon: MessageSquare, href: '/admin/testimonials', color: 'text-accent bg-accent/10' },
+    { label: 'Pesan Baru', value: stats.unread_messages, icon: Inbox, href: '/admin/contact-messages', color: 'text-destructive bg-destructive/10' },
+    { label: 'Testimoni Baru', value: stats.pending_testimonials, icon: MessageSquare, href: '/admin/testimonials', color: 'text-amber-600 bg-amber-50' },
   ]
 
   const managementCards = [

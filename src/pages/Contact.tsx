@@ -1,128 +1,240 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Mail, MapPin, Phone, Send } from 'lucide-react'
+import { Mail, MapPin, Phone, MessageCircle, Clock, Send } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Badge } from '../components/ui/badge'
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../components/ui/accordion'
+import { useSiteSettings } from '../hooks/use-site-settings'
+import api from '../lib/api'
 import { toast } from 'sonner'
 
-const contactInfo = [
-  { icon: MapPin, label: 'Alamat', value: 'Jl. Kecantikan No. 123, Jakarta Selatan' },
-  { icon: Phone, label: 'Telepon', value: '+62 812 3456 7890' },
-  { icon: Mail, label: 'Email', value: 'hello@glowstudio.id' },
-]
-
-const faqs = [
-  { q: 'Apakah produk Glow Studio aman?', a: 'Ya, semua produk kami telah teruji secara dermatologis dan menggunakan material food-grade yang aman untuk kulit.' },
-  { q: 'Berapa lama garansi produk?', a: 'Setiap produk Glow Studio memiliki garansi 1 tahun untuk kerusakan produksi.' },
-  { q: 'Bagaimana cara membersihkan alat?', a: 'Bersihkan dengan kain lembut dan alkohol 70% setelah pemakaian. Jangan merendam bagian elektronik.' },
-  { q: 'Apakah ada toko fisik?', a: 'Saat ini kami melayani penjualan secara online. Namun kami akan segera membuka flagship store di beberapa kota besar.' },
-  { q: 'Bagaimana cara pengembalian produk?', a: 'Hubungi customer service kami dalam 7 hari setelah penerimaan untuk pengembalian atau penukaran.' },
-]
-
 export default function Contact() {
-  const [form, setForm] = useState({ name: '', email: '', message: '' })
+  const { settings } = useSiteSettings()
+  const [form, setForm] = useState({ name: '', phone: '+62', email: '', message: '' })
+  const [sending, setSending] = useState(false)
+  const [faqs, setFaqs] = useState<{ id: number; question: string; answer: string }[]>([])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    api.get('/faqs').then((res) => {
+      setFaqs(res.data || [])
+    }).catch(() => {
+      console.warn('Gagal memuat FAQ — pastikan migrasi backend sudah dijalankan')
+    })
+  }, [])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    toast.success('Pesan berhasil dikirim! Kami akan menghubungi Anda segera.')
-    setForm({ name: '', email: '', message: '' })
+    if (!form.name || !form.phone || !form.email || !form.message) {
+      toast.error('Harap isi semua field')
+      return
+    }
+    setSending(true)
+    try {
+      const res = await api.post('/contact-messages', form)
+      setForm({ name: '', phone: '+62', email: '', message: '' })
+      toast.success(res.data?.message || 'Pesan berhasil dikirim!')
+    } catch {
+      toast.error('Gagal mengirim pesan. Silakan coba lagi.')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const contactEmail = settings.contact_email || 'hello@rindangcemarasukses.com'
+  const contactPhone = settings.contact_phone || ''
+  const contactAddress = settings.contact_address || ''
+  const waNumber = settings.whatsapp_phone || ''
+  const waMessage = encodeURIComponent('Halo, saya tertarik untuk mendalami produk Rindang Cemara Sukses.')
+
+  const contactItems = [
+    ...(contactAddress
+      ? [{ icon: MapPin, label: 'Alamat', value: contactAddress }]
+      : []),
+    ...(contactPhone
+      ? [{ icon: Phone, label: 'Telepon', value: contactPhone, href: `tel:${contactPhone}` }]
+      : []),
+    { icon: Mail, label: 'Email', value: contactEmail, href: `mailto:${contactEmail}` },
+    ...(waNumber
+      ? [{
+          icon: MessageCircle,
+          label: 'WhatsApp',
+          value: waNumber,
+          href: `https://wa.me/${waNumber.replace(/[^0-9]/g, '')}?text=${waMessage}`,
+          target: '_blank' as const,
+        }]
+      : []),
+  ]
+
+  const renderContactItem = (item: { icon: any; label: string; value: string; href?: string; target?: string }) => {
+    const Icon = item.icon
+    const content = (
+      <div className="flex items-start gap-4 p-4 rounded-xl bg-background/60 border border-border hover:shadow-sm transition-shadow">
+        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+          <Icon className="h-5 w-5 text-primary" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground">{item.label}</p>
+          <p className="font-medium text-sm break-all">{item.value}</p>
+        </div>
+      </div>
+    )
+
+    if (item.href) {
+      return (
+        <a key={item.label} href={item.href} target={item.target || undefined} rel={item.target === '_blank' ? 'noopener noreferrer' : undefined}>
+          {content}
+        </a>
+      )
+    }
+
+    return <div key={item.label}>{content}</div>
   }
 
   return (
-    <div className="pt-24 pb-16 sm:pb-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
-          <Badge variant="outline" className="mb-4">Hubungi Kami</Badge>
-          <h1 className="font-heading text-4xl sm:text-5xl font-bold mb-4">Kami Siap Membantu</h1>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            Punya pertanyaan atau butuh bantuan? Tim kami siap merespon dalam 1x24 jam.
-          </p>
-        </motion.div>
-
-        <div className="grid md:grid-cols-2 gap-12">
-          {/* Contact Form */}
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nama</Label>
-                <Input
-                  id="name"
-                  placeholder="Nama lengkap Anda"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="email@anda.com"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="message">Pesan</Label>
-                <textarea
-                  id="message"
-                  rows={5}
-                  placeholder="Tulis pesan Anda di sini..."
-                  value={form.message}
-                  onChange={(e) => setForm({ ...form, message: e.target.value })}
-                  required
-                  className="flex w-full rounded-xl border border-border bg-white px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary resize-none"
-                />
-              </div>
-              <Button type="submit" className="w-full gap-2">
-                <Send className="h-4 w-4" /> Kirim Pesan
-              </Button>
-            </form>
+    <>
+      {/* Header */}
+      <section className="pt-24 pb-8 sm:pt-28 sm:pb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
+            <Badge variant="outline" className="mb-4">Hubungi Kami</Badge>
+            <h1 className="font-heading text-4xl sm:text-5xl font-bold mb-4">Kami Siap Membantu</h1>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              Punya pertanyaan atau butuh bantuan? Tim kami siap merespon dalam 1x24 jam.
+            </p>
           </motion.div>
+        </div>
+      </section>
 
-          {/* Info & FAQ */}
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-8">
-            <div className="space-y-4">
-              {contactInfo.map((info) => {
-                const Icon = info.icon
-                return (
-                  <div key={info.label} className="flex items-start gap-4 p-4 rounded-xl bg-white border border-border">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <Icon className="h-5 w-5 text-primary" />
+      {/* Map + Contact Info */}
+      <section className="py-12 sm:py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-2 gap-8">
+            {settings.contact_map_url && (
+              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+                <div className="rounded-xl overflow-hidden h-full min-h-[300px]">
+                  <iframe
+                    src={settings.contact_map_url}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0, minHeight: '300px' }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Lokasi Toko"
+                    className="w-full h-full"
+                  />
+                </div>
+              </motion.div>
+            )}
+
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-3">
+              {contactItems.map(renderContactItem)}
+              <div className="flex items-start gap-4 p-4 rounded-xl bg-background/60 border border-border">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Clock className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Jam Operasional</p>
+                  <p className="font-medium text-sm">Sen - Jum: 08:00 - 17:00 WIB</p>
+                  <p className="text-sm text-muted-foreground">Sabtu: 08:00 - 14:00 WIB</p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Kirim Pesan */}
+      <section className="py-12 sm:py-16 bg-gradient-to-r from-amber-50/40 to-rose-50/40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <div className="max-w-2xl mx-auto">
+              <div className="border border-border rounded-2xl p-6 sm:p-8 bg-white shadow-sm">
+                <h2 className="font-heading text-xl font-bold text-center mb-6">Kirim Pesan</h2>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Nama</Label>
+                      <Input
+                        id="name"
+                        placeholder="Nama lengkap Anda"
+                        value={form.name}
+                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        required
+                      />
                     </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">{info.label}</p>
-                      <p className="font-medium text-sm">{info.value}</p>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">No. HP</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="+6281234567890"
+                        value={form.phone}
+                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                        required
+                      />
                     </div>
                   </div>
-                )
-              })}
-            </div>
-
-            <div>
-              <h3 className="font-heading font-semibold text-lg mb-4">Pertanyaan Umum</h3>
-              <Accordion type="multiple" className="space-y-2">
-                {faqs.map((faq, i) => (
-                  <AccordionItem key={i} value={i.toString()} className="border border-border rounded-xl px-4">
-                    <AccordionTrigger className="text-sm font-medium">
-                      {faq.q}
-                    </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground">
-                      {faq.a}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="email@anda.com"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="message">Pesan</Label>
+                    <textarea
+                      id="message"
+                      rows={5}
+                      placeholder="Tulis pesan Anda di sini..."
+                      value={form.message}
+                      onChange={(e) => setForm({ ...form, message: e.target.value })}
+                      required
+                      className="flex w-full rounded-xl border border-border bg-white px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary resize-none"
+                    />
+                  </div>
+                  <Button type="submit" className="w-full gap-2" disabled={sending}>
+                    <Send className="h-4 w-4" /> {sending ? 'Mengirim...' : 'Kirim Pesan'}
+                  </Button>
+                </form>
+              </div>
             </div>
           </motion.div>
         </div>
-      </div>
-    </div>
+      </section>
+
+      {/* FAQ */}
+      {faqs.length > 0 && (
+        <section className="py-12 sm:py-16 bg-accent/[0.03]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <div className="max-w-2xl mx-auto">
+                <h2 className="font-heading text-xl font-bold text-center mb-6">Pertanyaan Umum</h2>
+                <Accordion type="multiple" className="space-y-2">
+                  {faqs.map((faq) => (
+                    <AccordionItem key={faq.id} value={String(faq.id)} className="border border-border rounded-xl px-4 bg-white">
+                      <AccordionTrigger className="text-sm font-medium text-left">
+                        {faq.question}
+                      </AccordionTrigger>
+                      <AccordionContent className="text-muted-foreground text-sm">
+                        {faq.answer}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      )}
+    </>
   )
 }

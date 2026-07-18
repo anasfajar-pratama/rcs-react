@@ -23,6 +23,7 @@ interface Testimonial {
   avatarUrl?: string
   isActive: boolean
   isAdminCreated?: boolean
+  isRead?: boolean
 }
 
 export default function AdminTestimonials() {
@@ -57,6 +58,9 @@ export default function AdminTestimonials() {
     setForm({ name: t.name, content: t.content, rating: t.rating, phone: t.phone || '', email: t.email || '', avatarUrl: t.avatarUrl || '', isActive: t.isActive })
     setWaReplyMessage(defaultWaMessage(t.name))
     setModalOpen(true)
+    if (!t.isRead) {
+      api.patch(`/admin/testimonials/${t.id}/read`).then(() => load()).catch(() => {})
+    }
   }
 
   const handleSave = async () => {
@@ -96,16 +100,6 @@ export default function AdminTestimonials() {
       load()
     } catch {
       toast.error('Gagal menghapus')
-    }
-  }
-
-  const toggleActive = async (t: Testimonial) => {
-    try {
-      await api.put(`/admin/testimonials/${t.id}`, { isActive: !t.isActive })
-      load()
-    } catch (err: any) {
-      console.error('Toggle active error:', err.response?.data || err.message)
-      toast.error('Gagal mengubah status')
     }
   }
 
@@ -177,7 +171,10 @@ Tim Rindang Cemara Sukses 🌸`
                       ))}
                     </div>
                     <Badge variant={t.isActive ? 'default' : 'secondary'} className="text-[10px] px-1.5 py-0">
-                      {t.isActive ? 'Aktif' : 'Pending'}
+                      {t.isActive ? 'Ditampilkan' : 'Tidak Ditampilkan'}
+                    </Badge>
+                    <Badge variant={t.isRead ? 'outline' : 'secondary'} className="text-[10px] px-1.5 py-0">
+                      {t.isRead ? 'Sudah Dibaca' : 'Baru'}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground line-clamp-2">{t.content}</p>
@@ -189,7 +186,6 @@ Tim Rindang Cemara Sukses 🌸`
                   )}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <Switch checked={t.isActive} onCheckedChange={() => toggleActive(t)} />
                   <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>
                     <Edit3 className="h-4 w-4" />
                   </Button>
@@ -295,7 +291,7 @@ Tim Rindang Cemara Sukses 🌸`
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Aktif</Label>
+                  <Label>Tampilkan</Label>
                   <div className="flex items-center h-10">
                     <Switch checked={form.isActive} onCheckedChange={(v) => setForm({ ...form, isActive: v })} />
                   </div>

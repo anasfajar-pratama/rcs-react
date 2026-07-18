@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Package, Home, MessageSquare, Image,
   LogOut, Menu, ExternalLink, User, Layers, Settings,
   ClipboardList, Shield, Users, Palette, Info, ChevronDown,
-  SlidersHorizontal, ScrollText
+  SlidersHorizontal, ScrollText, Inbox, HelpCircle
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useAdminPermission } from '../../hooks/use-admin-permission'
@@ -36,6 +36,8 @@ const sidebarGroups: SidebarGroup[] = [
     { href: '/admin/heroes', label: 'Hero', icon: SlidersHorizontal, permission: 'view_heroes' },
     { href: '/admin/testimonials', label: 'Testimoni', icon: MessageSquare, permission: 'view_testimonials' },
     { href: '/admin/gallery', label: 'Galeri & Berita', icon: Image, permission: 'view_gallery' },
+    { href: '/admin/contact-messages', label: 'Pesan Masuk', icon: Inbox, permission: 'view_messages' },
+    { href: '/admin/faqs', label: 'FAQ', icon: HelpCircle, permission: 'view_faqs' },
     { href: '/admin/brands', label: 'Brand', icon: Palette, permission: 'view_brands' },
     { href: '/admin/about', label: 'About', icon: Info, permission: 'view_about' },
     { href: '/admin/legal-achievements', label: 'Legal & Achievement', icon: ScrollText, permission: 'view_about' },

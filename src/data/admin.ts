@@ -42,6 +42,25 @@ export interface ActivityLog {
   created_at: string
 }
 
+export interface ContactMessage {
+  id: number
+  name: string
+  phone: string
+  email: string
+  message: string
+  is_read: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface Faq {
+  id: number
+  question: string
+  answer: string
+  sort_order: number
+  is_active: boolean
+}
+
 export interface Setting {
   id: number
   key: string
