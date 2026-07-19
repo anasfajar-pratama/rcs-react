@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { Mail, MapPin, Phone, MessageCircle, Clock, Send } from 'lucide-react'
+import { Mail, MapPin, Phone, MessageCircle, Clock, Send, ShieldCheck } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Badge } from '../components/ui/badge'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog'
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../components/ui/accordion'
 import { useSiteSettings } from '../hooks/use-site-settings'
 import api from '../lib/api'
@@ -15,6 +16,10 @@ export default function Contact() {
   const [form, setForm] = useState({ name: '', phone: '+62', email: '', message: '' })
   const [sending, setSending] = useState(false)
   const [faqs, setFaqs] = useState<{ id: number; question: string; answer: string }[]>([])
+  const [verifyOpen, setVerifyOpen] = useState(false)
+  const [verifyDigits, setVerifyDigits] = useState<string[]>(['', '', '', ''])
+  const [verifyError, setVerifyError] = useState('')
+  const digitRefs = useRef<(HTMLInputElement | null)[]>([])
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -25,12 +30,51 @@ export default function Contact() {
     })
   }, [])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name || !form.phone || !form.email || !form.message) {
       toast.error('Harap isi semua field')
       return
     }
+    const last4 = form.phone.replace(/\D/g, '').slice(-4)
+    if (last4.length < 4) {
+      toast.error('Nomor HP tidak valid')
+      return
+    }
+    setVerifyDigits(['', '', '', ''])
+    setVerifyError('')
+    setVerifyOpen(true)
+    setTimeout(() => digitRefs.current[0]?.focus(), 100)
+  }
+
+  const handleDigitChange = (index: number, value: string) => {
+    if (value.length > 1) return
+    if (value && !/^\d$/.test(value)) return
+    setVerifyError('')
+    const next = [...verifyDigits]
+    next[index] = value
+    setVerifyDigits(next)
+    if (value && index < 3) {
+      digitRefs.current[index + 1]?.focus()
+    }
+  }
+
+  const handleDigitKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !verifyDigits[index] && index > 0) {
+      digitRefs.current[index - 1]?.focus()
+    }
+    if (e.key === 'Enter' && verifyDigits.every(d => d)) {
+      handleVerifyConfirm()
+    }
+  }
+
+  const handleVerifyConfirm = async () => {
+    const last4 = form.phone.replace(/\D/g, '').slice(-4)
+    if (verifyDigits.join('') !== last4) {
+      setVerifyError('4 digit terakhir nomor HP tidak sesuai')
+      return
+    }
+    setVerifyOpen(false)
     setSending(true)
     try {
       const res = await api.post('/contact-messages', form)
@@ -201,6 +245,9 @@ export default function Contact() {
                       className="flex w-full rounded-xl border border-border bg-white px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary resize-none"
                     />
                   </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Pesan akan di balas paling lama 2x24 jam di hari kerja langsung ke nomor WhatsApp yang Anda inputkan.
+                  </p>
                   <Button type="submit" className="w-full gap-2" disabled={sending}>
                     <Send className="h-4 w-4" /> {sending ? 'Mengirim...' : 'Kirim Pesan'}
                   </Button>
@@ -210,6 +257,50 @@ export default function Contact() {
           </motion.div>
         </div>
       </section>
+
+      {/* Verifikasi Modal */}
+      <Dialog open={verifyOpen} onOpenChange={(open) => { setVerifyOpen(open); if (!open) setVerifyError('') }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+                Verifikasi
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground text-center">
+              Masukkan 4 digit terakhir nomor HP Anda
+            </p>
+            <div className="flex justify-center gap-3">
+              {verifyDigits.map((d, i) => (
+                <input
+                  key={i}
+                  ref={(el) => { digitRefs.current[i] = el }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={d}
+                  onChange={(e) => handleDigitChange(i, e.target.value)}
+                  onKeyDown={(e) => handleDigitKeyDown(i, e)}
+                  className="w-12 h-14 text-center text-lg font-bold rounded-xl border border-border bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                />
+              ))}
+            </div>
+            {verifyError && (
+              <p className="text-xs text-destructive text-center">{verifyError}</p>
+            )}
+            <Button
+              className="w-full gap-2"
+              disabled={verifyDigits.some(d => !d)}
+              onClick={handleVerifyConfirm}
+            >
+              <ShieldCheck className="h-4 w-4" /> Konfirmasi
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* FAQ */}
       {faqs.length > 0 && (

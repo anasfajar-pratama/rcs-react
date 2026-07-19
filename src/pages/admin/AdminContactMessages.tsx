@@ -45,6 +45,12 @@ export default function AdminContactMessages() {
     }
   }
 
+  const waMessage = (name: string, phone: string) => {
+    const text = `Terimakasih sudah menghubungi kami, ${name}.\n\nBerikut penjelasan nya :\n\nAdmin - Rindang Cemara Group`
+    const cleanPhone = phone.replace(/[^0-9]/g, '')
+    return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`
+  }
+
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('id-ID', {
       day: 'numeric', month: 'short', year: 'numeric',
@@ -101,7 +107,7 @@ export default function AdminContactMessages() {
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <a
-                      href={`https://wa.me/${msg.phone.replace(/[^0-9]/g, '')}`}
+                      href={waMessage(msg.name, msg.phone)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="w-9 h-9 rounded-xl bg-green-50 text-green-600 hover:bg-green-100 flex items-center justify-center transition-colors"

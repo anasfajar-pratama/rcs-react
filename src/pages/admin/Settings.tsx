@@ -9,6 +9,7 @@ import { ImageCropperModal } from '../../components/ui/image-cropper-modal'
 import { AdminLayout, AdminLoader } from './AdminLayout'
 import api from '../../lib/api'
 import { toast } from 'sonner'
+import { useSiteSettings } from '../../hooks/use-site-settings'
 import { validateFileSize } from '../../lib/compress-image'
 import { useImageUpload } from '../../hooks/use-image-upload'
 import type { Setting } from '../../data/admin'
@@ -43,6 +44,7 @@ export default function AdminSettings() {
   const [savingGroups, setSavingGroups] = useState<Record<string, boolean>>({})
   const [edited, setEdited] = useState<Record<string, string>>({})
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const { refreshSettings } = useSiteSettings()
 
   const load = () => {
     setLoading(true)
@@ -81,6 +83,9 @@ export default function AdminSettings() {
         api.put(`/admin/settings/${s.id}`, { value: edited[s.key] ?? '' })
       )
       await Promise.all(promises)
+      if (items.some(s => s.key === 'site_favicon' || s.key === 'site_logo')) {
+        refreshSettings()
+      }
       toast.success(`Pengaturan ${groupLabel} berhasil disimpan`)
     } catch {
       toast.error(`Gagal menyimpan pengaturan ${groupLabel}`)
