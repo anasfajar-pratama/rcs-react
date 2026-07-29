@@ -380,6 +380,7 @@ export default function AdminProductEdit() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Manfaat (4)</Label>
+                  <p className="text-[11px] text-muted-foreground">gunakan kalimat efektif dalam 3-5 kata</p>
                   {form.benefits.map((b, i) => (
                     <Input key={i} value={b} onChange={(e) => {
                       const benefits = [...form.benefits]; benefits[i] = e.target.value; setForm({ ...form, benefits })
@@ -388,6 +389,7 @@ export default function AdminProductEdit() {
                 </div>
                 <div className="space-y-2">
                   <Label>Cara Pakai (4)</Label>
+                  <p className="text-[11px] text-muted-foreground">gunakan kalimat efektif dalam 3-5 kata</p>
                   {form.howToUse.map((h, i) => (
                     <Input key={i} value={h} onChange={(e) => {
                       const howToUse = [...form.howToUse]; howToUse[i] = e.target.value; setForm({ ...form, howToUse })

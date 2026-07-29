@@ -84,8 +84,8 @@ export default function ProductDetail() {
   }
 
   const wishlisted = isWishlisted(product.id)
-  const discountPercent = product.originalPrice && product.price && product.originalPrice > product.price
-    ? Math.round((1 - product.price / product.originalPrice) * 100) : 0
+  const discountPercent = Number(product.originalPrice) > 0 && product.price && Number(product.originalPrice) > Number(product.price)
+    ? Math.round((1 - product.price / product.originalPrice!) * 100) : 0
 
   const brandConfig = getBrandByCategory(product.category)
   const brandName = brandConfig?.name || product.category
@@ -251,11 +251,11 @@ export default function ProductDetail() {
             {product.price != null && (
               <div className="flex items-center gap-3 mb-4">
                 <p className="text-2xl font-bold" style={{ color: brandConfig?.colorDark || 'var(--color-foreground)' }}>{formatPrice(product.price)}</p>
-                {product.originalPrice != null && product.originalPrice > product.price && (
+                {Number(product.originalPrice) > 0 && Number(product.originalPrice) > Number(product.price) && (
                   <>
                     <p className="text-lg text-muted-foreground line-through">{formatPrice(product.originalPrice)}</p>
                     <span className="text-xs font-semibold text-white bg-destructive px-2 py-0.5 rounded-full">
-                      -{Math.round((1 - product.price / product.originalPrice) * 100)}%
+                      -{Math.round((1 - product.price / product.originalPrice!) * 100)}%
                     </span>
                   </>
                 )}

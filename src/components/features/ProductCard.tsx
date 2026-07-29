@@ -23,6 +23,11 @@ function formatSoldCount(count?: number): string {
   return count.toString()
 }
 
+function truncateWords(text: string, max: number) {
+  const words = text.split(' ');
+  return words.length > max ? words.slice(0, max).join(' ') + '...' : text;
+}
+
 export function ProductCard({ product, onQuickView, rank, showNewBadge, showPromoBadge, showFeaturedBadge }: ProductCardProps) {
   const { isWishlisted, toggleItem } = useWishlist()
   const wishlisted = isWishlisted(product.id)
@@ -37,8 +42,8 @@ export function ProductCard({ product, onQuickView, rank, showNewBadge, showProm
   }
   const rating = product.rating ?? 0
   const filledStars = Math.round(rating)
-  const discountPercent = product.originalPrice && product.price
-    ? Math.round((1 - product.price / product.originalPrice) * 100)
+  const discountPercent = Number(product.originalPrice) > 0 && product.price
+    ? Math.round((1 - product.price / product.originalPrice!) * 100)
     : 0
 
   return (
@@ -195,15 +200,15 @@ export function ProductCard({ product, onQuickView, rank, showNewBadge, showProm
               <span className="font-heading font-bold text-base text-foreground">
                 {formatPrice(product.price)}
               </span>
-              {product.originalPrice && product.originalPrice > product.price && (
+              {Number(product.originalPrice) > 0 && Number(product.originalPrice) > Number(product.price) && (
                 <span className="text-xs text-muted-foreground line-through">
                   {formatPrice(product.originalPrice)}
                 </span>
               )}
             </div>
-            {product.originalPrice && product.originalPrice > product.price && (
+            {Number(product.originalPrice) > 0 && Number(product.originalPrice) > Number(product.price) && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200 shrink-0">
-                -{Math.round((1 - product.price / product.originalPrice) * 100)}%
+                -{Math.round((1 - product.price / product.originalPrice!) * 100)}%
               </span>
             )}
           </div>
@@ -212,7 +217,7 @@ export function ProductCard({ product, onQuickView, rank, showNewBadge, showProm
         {/* Manfaat */}
         <div className="flex gap-1.5 flex-wrap">
           {product.benefits?.slice(0, 2).map((b, i) => (
-            <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-primary/5 text-primary whitespace-nowrap">
+            <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-primary/5 text-primary">
               {b}
             </span>
           ))}
