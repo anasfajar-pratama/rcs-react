@@ -1,4 +1,4 @@
-# PLAN: Beauty Tools Website — "GLOW STUDIO"
+# PLAN: Beauty Tools Website — "RINDANG CEMARA GROUP"
 
 ## Deskripsi
 Website e-commerce alat kecantikan (beauty tools) modern dengan desain Light Mode 2025/2026.
